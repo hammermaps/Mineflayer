@@ -1,5 +1,7 @@
 # Mineflayer — native 26.2 fork
 
+2026-09-13：选择性集成箱子状态修复与 pnpm 自依赖路径修复，原生 26.2 协议补丁保持不变。详见 [更新审查](https://github.com/zkonikishi/Mineflayer/blob/26.2/docs/upstream-update-2026-09-13.md)。
+
 这是 [zkonikishi/Mineflayer](https://github.com/zkonikishi/Mineflayer/tree/26.2) 的 `26.2` 分支，为 Minecraft Java / Paper 26.2 原生协议和插件自动化测试维护。它不是 PrismarineJS 官方 npm 发布版，也不是 MCP 服务端。
 
 本项目基于 [PrismarineJS/mineflayer](https://github.com/PrismarineJS/mineflayer)；保留上游 API 和 MIT 许可。它是有明确兼容性补丁的 fork，而不是完全独立重写。
