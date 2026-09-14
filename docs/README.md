@@ -1,5 +1,7 @@
 # Mineflayer — native 26.2 fork
 
+2026-09-15：新增登录状态清理、物理积压限制、窗口标题标准化与玩家能力状态，详见 [本轮说明](https://github.com/zkonikishi/Mineflayer/blob/26.2/docs/upstream-update-2026-09-15.md)。
+
 2026-09-13：选择性集成箱子状态修复与 pnpm 自依赖路径修复，原生 26.2 协议补丁保持不变。详见 [更新审查](https://github.com/zkonikishi/Mineflayer/blob/26.2/docs/upstream-update-2026-09-13.md)。
 
 这是 [zkonikishi/Mineflayer](https://github.com/zkonikishi/Mineflayer/tree/26.2) 的 `26.2` 分支，为 Minecraft Java / Paper 26.2 原生协议和插件自动化测试维护。它不是 PrismarineJS 官方 npm 发布版，也不是 MCP 服务端。
