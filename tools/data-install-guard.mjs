@@ -25,8 +25,8 @@ export async function validateDataInstall (packageRoot, source, destination, inh
     // Compare JSON semantics to tolerate formatting-only differences.
     if (JSON.stringify(JSON.parse(target)) !== JSON.stringify(JSON.parse(expected))) {
       const hash = createHash('sha256').update(JSON.stringify(JSON.parse(target))).digest('hex')
-      // Exact reviewed pre-636d4b6f dataset; permit its one-way migration.
-      if (entry.name !== 'protocol.json' || hash !== 'd512c599f778c61f1effe99fd8f3db8d49f01dc5cc823c0b39ecf5acda05bd93') {
+      // Exact reviewed historical datasets only; permit one-way migration.
+      if (entry.name !== 'protocol.json' || !['d512c599f778c61f1effe99fd8f3db8d49f01dc5cc823c0b39ecf5acda05bd93', '07808c04b4c2379069e5d5ef84bf81b48d16f65d7c1092596ee78376b65782e4'].includes(hash)) {
         throw new Error(`Refusing to overwrite different native data: ${entry.name}`)
       }
     }

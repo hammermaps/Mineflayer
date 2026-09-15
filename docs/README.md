@@ -6,6 +6,10 @@
 
 ## 与 Minecraft MCP Server 的关系
 
+ViaVersion / ViaBackwards / ViaRewind 和 ViaProxy 可作为外部协议转译层；创建机器人时必须明确指定客户端 `version`，而非后端版本。本库不加载 Java 插件或客户端模组。ViaFabric 服务端组合尚未验收，ViaFabricPlus 不能直接装进 Node。
+
+2026-09-15 修复 26.2 出站 0x3e–0x44 映射：区分新增 optional-varint 旁观者操作与 UUID 传送包，恢复挥手、方块交互和物品使用的正确编号。MCP 隔离测试已覆盖同版本 26.2、1.21.11/1.8.9 经 Via 插件至 26.2、26.2 经 ViaProxy 至 1.20.1；转译结果不计为原生协议验收。
+
 | 项目 | 负责什么 |
 | --- | --- |
 | **本仓库：Mineflayer** | 连接 Minecraft、解析协议、维护世界/实体/物品状态、执行玩家操作 |
