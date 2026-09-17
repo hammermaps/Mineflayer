@@ -1,0 +1,514 @@
+[
+  {
+    "name": "angry_villager",
+    "id": 0
+  },
+  {
+    "name": "block",
+    "id": 1
+  },
+  {
+    "name": "block_marker",
+    "id": 2
+  },
+  {
+    "name": "bubble",
+    "id": 3
+  },
+  {
+    "name": "sulfur_bubbles",
+    "id": 4
+  },
+  {
+    "name": "noxious_gas",
+    "id": 5
+  },
+  {
+    "name": "noxious_gas_cloud",
+    "id": 6
+  },
+  {
+    "name": "geyser",
+    "id": 7
+  },
+  {
+    "name": "geyser_base",
+    "id": 8
+  },
+  {
+    "name": "geyser_poof",
+    "id": 9
+  },
+  {
+    "name": "geyser_plume",
+    "id": 10
+  },
+  {
+    "name": "cloud",
+    "id": 11
+  },
+  {
+    "name": "copper_fire_flame",
+    "id": 12
+  },
+  {
+    "name": "crit",
+    "id": 13
+  },
+  {
+    "name": "damage_indicator",
+    "id": 14
+  },
+  {
+    "name": "dragon_breath",
+    "id": 15
+  },
+  {
+    "name": "dripping_lava",
+    "id": 16
+  },
+  {
+    "name": "falling_lava",
+    "id": 17
+  },
+  {
+    "name": "landing_lava",
+    "id": 18
+  },
+  {
+    "name": "dripping_water",
+    "id": 19
+  },
+  {
+    "name": "falling_water",
+    "id": 20
+  },
+  {
+    "name": "dust",
+    "id": 21
+  },
+  {
+    "name": "dust_color_transition",
+    "id": 22
+  },
+  {
+    "name": "effect",
+    "id": 23
+  },
+  {
+    "name": "elder_guardian",
+    "id": 24
+  },
+  {
+    "name": "enchanted_hit",
+    "id": 25
+  },
+  {
+    "name": "enchant",
+    "id": 26
+  },
+  {
+    "name": "end_rod",
+    "id": 27
+  },
+  {
+    "name": "entity_effect",
+    "id": 28
+  },
+  {
+    "name": "explosion_emitter",
+    "id": 29
+  },
+  {
+    "name": "explosion",
+    "id": 30
+  },
+  {
+    "name": "gust",
+    "id": 31
+  },
+  {
+    "name": "small_gust",
+    "id": 32
+  },
+  {
+    "name": "gust_emitter_large",
+    "id": 33
+  },
+  {
+    "name": "gust_emitter_small",
+    "id": 34
+  },
+  {
+    "name": "sonic_boom",
+    "id": 35
+  },
+  {
+    "name": "falling_dust",
+    "id": 36
+  },
+  {
+    "name": "firework",
+    "id": 37
+  },
+  {
+    "name": "fishing",
+    "id": 38
+  },
+  {
+    "name": "flame",
+    "id": 39
+  },
+  {
+    "name": "infested",
+    "id": 40
+  },
+  {
+    "name": "cherry_leaves",
+    "id": 41
+  },
+  {
+    "name": "pale_oak_leaves",
+    "id": 42
+  },
+  {
+    "name": "red_poplar_leaves",
+    "id": 43
+  },
+  {
+    "name": "orange_poplar_leaves",
+    "id": 44
+  },
+  {
+    "name": "yellow_poplar_leaves",
+    "id": 45
+  },
+  {
+    "name": "tinted_leaves",
+    "id": 46
+  },
+  {
+    "name": "sculk_soul",
+    "id": 47
+  },
+  {
+    "name": "sculk_charge",
+    "id": 48
+  },
+  {
+    "name": "sculk_charge_pop",
+    "id": 49
+  },
+  {
+    "name": "soul_fire_flame",
+    "id": 50
+  },
+  {
+    "name": "soul",
+    "id": 51
+  },
+  {
+    "name": "flash",
+    "id": 52
+  },
+  {
+    "name": "happy_villager",
+    "id": 53
+  },
+  {
+    "name": "composter",
+    "id": 54
+  },
+  {
+    "name": "heart",
+    "id": 55
+  },
+  {
+    "name": "instant_effect",
+    "id": 56
+  },
+  {
+    "name": "item",
+    "id": 57
+  },
+  {
+    "name": "vibration",
+    "id": 58
+  },
+  {
+    "name": "trail",
+    "id": 59
+  },
+  {
+    "name": "pause_mob_growth",
+    "id": 60
+  },
+  {
+    "name": "reset_mob_growth",
+    "id": 61
+  },
+  {
+    "name": "item_slime",
+    "id": 62
+  },
+  {
+    "name": "item_cobweb",
+    "id": 63
+  },
+  {
+    "name": "item_snowball",
+    "id": 64
+  },
+  {
+    "name": "large_smoke",
+    "id": 65
+  },
+  {
+    "name": "lava",
+    "id": 66
+  },
+  {
+    "name": "mycelium",
+    "id": 67
+  },
+  {
+    "name": "note",
+    "id": 68
+  },
+  {
+    "name": "poof",
+    "id": 69
+  },
+  {
+    "name": "portal",
+    "id": 70
+  },
+  {
+    "name": "rain",
+    "id": 71
+  },
+  {
+    "name": "smoke",
+    "id": 72
+  },
+  {
+    "name": "white_smoke",
+    "id": 73
+  },
+  {
+    "name": "sneeze",
+    "id": 74
+  },
+  {
+    "name": "spit",
+    "id": 75
+  },
+  {
+    "name": "squid_ink",
+    "id": 76
+  },
+  {
+    "name": "sweep_attack",
+    "id": 77
+  },
+  {
+    "name": "totem_of_undying",
+    "id": 78
+  },
+  {
+    "name": "underwater",
+    "id": 79
+  },
+  {
+    "name": "splash",
+    "id": 80
+  },
+  {
+    "name": "witch",
+    "id": 81
+  },
+  {
+    "name": "bubble_pop",
+    "id": 82
+  },
+  {
+    "name": "current_down",
+    "id": 83
+  },
+  {
+    "name": "bubble_column_up",
+    "id": 84
+  },
+  {
+    "name": "nautilus",
+    "id": 85
+  },
+  {
+    "name": "dolphin",
+    "id": 86
+  },
+  {
+    "name": "campfire_cosy_smoke",
+    "id": 87
+  },
+  {
+    "name": "campfire_signal_smoke",
+    "id": 88
+  },
+  {
+    "name": "dripping_honey",
+    "id": 89
+  },
+  {
+    "name": "falling_honey",
+    "id": 90
+  },
+  {
+    "name": "landing_honey",
+    "id": 91
+  },
+  {
+    "name": "falling_nectar",
+    "id": 92
+  },
+  {
+    "name": "falling_spore_blossom",
+    "id": 93
+  },
+  {
+    "name": "ash",
+    "id": 94
+  },
+  {
+    "name": "crimson_spore",
+    "id": 95
+  },
+  {
+    "name": "warped_spore",
+    "id": 96
+  },
+  {
+    "name": "spore_blossom_air",
+    "id": 97
+  },
+  {
+    "name": "dripping_obsidian_tear",
+    "id": 98
+  },
+  {
+    "name": "falling_obsidian_tear",
+    "id": 99
+  },
+  {
+    "name": "landing_obsidian_tear",
+    "id": 100
+  },
+  {
+    "name": "reverse_portal",
+    "id": 101
+  },
+  {
+    "name": "white_ash",
+    "id": 102
+  },
+  {
+    "name": "small_flame",
+    "id": 103
+  },
+  {
+    "name": "snowflake",
+    "id": 104
+  },
+  {
+    "name": "dripping_dripstone_lava",
+    "id": 105
+  },
+  {
+    "name": "falling_dripstone_lava",
+    "id": 106
+  },
+  {
+    "name": "dripping_dripstone_water",
+    "id": 107
+  },
+  {
+    "name": "falling_dripstone_water",
+    "id": 108
+  },
+  {
+    "name": "glow_squid_ink",
+    "id": 109
+  },
+  {
+    "name": "glow",
+    "id": 110
+  },
+  {
+    "name": "wax_on",
+    "id": 111
+  },
+  {
+    "name": "wax_off",
+    "id": 112
+  },
+  {
+    "name": "electric_spark",
+    "id": 113
+  },
+  {
+    "name": "scrape",
+    "id": 114
+  },
+  {
+    "name": "shriek",
+    "id": 115
+  },
+  {
+    "name": "egg_crack",
+    "id": 116
+  },
+  {
+    "name": "dust_plume",
+    "id": 117
+  },
+  {
+    "name": "trial_spawner_detection",
+    "id": 118
+  },
+  {
+    "name": "trial_spawner_detection_ominous",
+    "id": 119
+  },
+  {
+    "name": "vault_connection",
+    "id": 120
+  },
+  {
+    "name": "dust_pillar",
+    "id": 121
+  },
+  {
+    "name": "ominous_spawning",
+    "id": 122
+  },
+  {
+    "name": "raid_omen",
+    "id": 123
+  },
+  {
+    "name": "trial_omen",
+    "id": 124
+  },
+  {
+    "name": "block_crumble",
+    "id": 125
+  },
+  {
+    "name": "firefly",
+    "id": 126
+  },
+  {
+    "name": "sulfur_cube_goo",
+    "id": 127
+  }
+]

@@ -1,6 +1,6 @@
 # Mineflayer · 原生协议兼容与机器人运行库
 
-为 Minecraft Java / Paper 原生协议兼容、机器人状态可靠性和插件自动化维护的 JavaScript 运行库。当前维护主线是 `26.2`。
+为 Minecraft Java / Paper 原生协议兼容、机器人状态可靠性和插件自动化维护的 JavaScript 运行库。当前维护主线是 `26.3`。
 
 **这是 zkonikishi 独立维护的 Mineflayer 派生版本，不是 PrismarineJS 官方发行版的镜像，也不是从零重写的独立协议栈。** 我们保留并扩展上游 API，选择性吸收更新，以自身兼容性测试和真实服务器验收为准。
 
@@ -21,7 +21,7 @@ ViaVersion / ViaBackwards / ViaRewind 和 ViaProxy 可作为外部协议转译�
 
 | 领域 | 本维护版本的实现 |
 | --- | --- |
-| 原生 26.2 数据 | 提供并安装原生数据，适配 entity metadata / item component serializer；不以 ViaVersion 替代原生兼容 |
+| 原生 26.2 / 26.3 数据 | 提供并安装原生数据，适配 entity metadata / item component serializer；不以 ViaVersion 替代原生兼容 |
 | 数据包与时钟 | 独立 attack 包、use_entity 字段、clockUpdates；按服务端注册表和维度默认时钟选择，不猜固定 ID |
 | 队伍与计分板 | 兼容显示名、颜色、flags 等字段；修复队伍删除事件；每次登录清理旧状态，同时保留容器对象引用 |
 | 背包与窗口 | 关闭窗口后的背包同步、窗口 ID 复用/缓存清理；窗口标题标准化为 ChatMessage |
@@ -37,7 +37,7 @@ ViaVersion / ViaBackwards / ViaRewind 和 ViaProxy 可作为外部协议转译�
 
 | 目标 | 状态 |
 | --- | --- |
-| Minecraft Java / Paper 26.2 | 当前原生维护重点，协议 776；已完成隔离服验证 |
+| Minecraft Java / Paper 26.3 | 当前原生维护重点，协议 777；已完成 Vanilla 与 Paper 隔离登录/Spawn 验证 |
 | 旧版 Minecraft Java | 保留版本分派；历史矩阵验证过一组版本和基础操作，不代表所有历史版本、所有 API 均兼容 |
 | 使用普通客户端协议的服务端插件 | 可通过通用聊天、GUI、物品、方块和实体操作进行交互；具体业务需验收 |
 | 仅服务端模组 | 若允许普通客户端连接，可能使用通用能力；尚无完整模组兼容矩阵 |
@@ -62,7 +62,7 @@ const bot = mineflayer.createBot({
   port: 29565,
   username: 'TestBot',
   auth: 'offline',
-  version: '26.2'
+  version: '26.3'
 })
 
 bot.once('spawn', () => console.log('Robot spawned'))
@@ -76,8 +76,8 @@ bot.on('kicked', console.error)
 
 - 发布部署应把分支引用换成经过验收的完整 commit SHA，并保留宿主项目 lockfile。
 - 本库的 minecraft-protocol 依赖仍引用分支；**固定 Mineflayer SHA 不等于固定整个依赖树**。宿主需要同时审查数据、协议、区块与物理依赖，MCP 仓库中已有对应的锁定组合。
-- 安装脚本会将随库提供的 26.2 数据写入已安装 minecraft-data 并生成索引。未经允许的版本或覆盖冲突会失败，不要绕过。
-- 若 npm 未执行安装脚本，需要在本库目录明确运行 `node tools/install-minecraft-data-26.2.mjs`。不要跳过后宣称原生版本已可用。
+- 安装脚本会将随库提供的 26.2 / 26.3 数据写入已安装 minecraft-data 并生成索引。未经允许的版本或覆盖冲突会失败，不要绕过。
+- 若 npm 未执行安装脚本，需要在本库目录明确运行 `node tools/install-minecraft-data-native.mjs`。不要跳过后宣称原生版本已可用。
 - 升级上述底层依赖后必须重跑测试。不要在多个项目共享的依赖目录中盲目替换数据。
 
 ## 验证与开发

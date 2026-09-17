@@ -67,7 +67,7 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@v1.4.3
         with:
-          java-version: 25
+          java-version: 26
           java-package: jre
       - name: Install Dependencies
         run: npm install

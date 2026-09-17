@@ -1,0 +1,347 @@
+[
+  {
+    "id": 0,
+    "official": "minecraft:accept_teleportation",
+    "name": "teleport_confirm"
+  },
+  {
+    "id": 1,
+    "official": "minecraft:attack",
+    "name": "attack"
+  },
+  {
+    "id": 2,
+    "official": "minecraft:block_entity_tag_query",
+    "name": "query_block_nbt"
+  },
+  {
+    "id": 3,
+    "official": "minecraft:bundle_item_selected",
+    "name": "select_bundle_item"
+  },
+  {
+    "id": 4,
+    "official": "minecraft:change_difficulty",
+    "name": "set_difficulty"
+  },
+  {
+    "id": 5,
+    "official": "minecraft:change_game_mode",
+    "name": "change_gamemode"
+  },
+  {
+    "id": 6,
+    "official": "minecraft:chat_ack",
+    "name": "message_acknowledgement"
+  },
+  {
+    "id": 7,
+    "official": "minecraft:chat_command",
+    "name": "chat_command"
+  },
+  {
+    "id": 8,
+    "official": "minecraft:chat_command_signed",
+    "name": "chat_command_signed"
+  },
+  {
+    "id": 9,
+    "official": "minecraft:chat",
+    "name": "chat_message"
+  },
+  {
+    "id": 10,
+    "official": "minecraft:chat_session_update",
+    "name": "chat_session_update"
+  },
+  {
+    "id": 11,
+    "official": "minecraft:chunk_batch_received",
+    "name": "chunk_batch_received"
+  },
+  {
+    "id": 12,
+    "official": "minecraft:client_command",
+    "name": "client_command"
+  },
+  {
+    "id": 13,
+    "official": "minecraft:client_tick_end",
+    "name": "tick_end"
+  },
+  {
+    "id": 14,
+    "official": "minecraft:client_information",
+    "name": "settings"
+  },
+  {
+    "id": 15,
+    "official": "minecraft:command_suggestion",
+    "name": "tab_complete"
+  },
+  {
+    "id": 16,
+    "official": "minecraft:configuration_acknowledged",
+    "name": "configuration_acknowledged"
+  },
+  {
+    "id": 17,
+    "official": "minecraft:container_button_click",
+    "name": "enchant_item"
+  },
+  {
+    "id": 18,
+    "official": "minecraft:container_click",
+    "name": "window_click"
+  },
+  {
+    "id": 19,
+    "official": "minecraft:container_close",
+    "name": "close_window"
+  },
+  {
+    "id": 20,
+    "official": "minecraft:container_slot_state_changed",
+    "name": "set_slot_state"
+  },
+  {
+    "id": 21,
+    "official": "minecraft:cookie_response",
+    "name": "cookie_response"
+  },
+  {
+    "id": 22,
+    "official": "minecraft:custom_payload",
+    "name": "custom_payload"
+  },
+  {
+    "id": 23,
+    "official": "minecraft:debug_subscription_request",
+    "name": "debug_subscription_request"
+  },
+  {
+    "id": 24,
+    "official": "minecraft:edit_book",
+    "name": "edit_book"
+  },
+  {
+    "id": 25,
+    "official": "minecraft:entity_tag_query",
+    "name": "query_entity_nbt"
+  },
+  {
+    "id": 26,
+    "official": "minecraft:interact",
+    "name": "use_entity"
+  },
+  {
+    "id": 27,
+    "official": "minecraft:jigsaw_generate",
+    "name": "generate_structure"
+  },
+  {
+    "id": 28,
+    "official": "minecraft:keep_alive",
+    "name": "keep_alive"
+  },
+  {
+    "id": 29,
+    "official": "minecraft:lock_difficulty",
+    "name": "lock_difficulty"
+  },
+  {
+    "id": 30,
+    "official": "minecraft:move_player_pos",
+    "name": "position"
+  },
+  {
+    "id": 31,
+    "official": "minecraft:move_player_pos_rot",
+    "name": "position_look"
+  },
+  {
+    "id": 32,
+    "official": "minecraft:move_player_rot",
+    "name": "look"
+  },
+  {
+    "id": 33,
+    "official": "minecraft:move_player_status_only",
+    "name": "flying"
+  },
+  {
+    "id": 34,
+    "official": "minecraft:move_vehicle",
+    "name": "vehicle_move"
+  },
+  {
+    "id": 35,
+    "official": "minecraft:paddle_boat",
+    "name": "steer_boat"
+  },
+  {
+    "id": 36,
+    "official": "minecraft:pick_item_from_block",
+    "name": "pick_item_from_block"
+  },
+  {
+    "id": 37,
+    "official": "minecraft:pick_item_from_entity",
+    "name": "pick_item_from_entity"
+  },
+  {
+    "id": 38,
+    "official": "minecraft:ping_request",
+    "name": "ping_request"
+  },
+  {
+    "id": 39,
+    "official": "minecraft:place_recipe",
+    "name": "craft_recipe_request"
+  },
+  {
+    "id": 40,
+    "official": "minecraft:player_abilities",
+    "name": "abilities"
+  },
+  {
+    "id": 41,
+    "official": "minecraft:player_action",
+    "name": "block_dig"
+  },
+  {
+    "id": 42,
+    "official": "minecraft:player_command",
+    "name": "entity_action"
+  },
+  {
+    "id": 43,
+    "official": "minecraft:player_input",
+    "name": "player_input"
+  },
+  {
+    "id": 44,
+    "official": "minecraft:player_loaded",
+    "name": "player_loaded"
+  },
+  {
+    "id": 45,
+    "official": "minecraft:pong",
+    "name": "pong"
+  },
+  {
+    "id": 46,
+    "official": "minecraft:punch",
+    "name": "arm_animation"
+  },
+  {
+    "id": 47,
+    "official": "minecraft:recipe_book_change_settings",
+    "name": "recipe_book"
+  },
+  {
+    "id": 48,
+    "official": "minecraft:recipe_book_seen_recipe",
+    "name": "displayed_recipe"
+  },
+  {
+    "id": 49,
+    "official": "minecraft:rename_item",
+    "name": "name_item"
+  },
+  {
+    "id": 50,
+    "official": "minecraft:resource_pack",
+    "name": "resource_pack_receive"
+  },
+  {
+    "id": 51,
+    "official": "minecraft:seen_advancements",
+    "name": "advancement_tab"
+  },
+  {
+    "id": 52,
+    "official": "minecraft:select_trade",
+    "name": "select_trade"
+  },
+  {
+    "id": 53,
+    "official": "minecraft:set_beacon",
+    "name": "set_beacon_effect"
+  },
+  {
+    "id": 54,
+    "official": "minecraft:set_carried_item",
+    "name": "held_item_slot"
+  },
+  {
+    "id": 55,
+    "official": "minecraft:set_command_block",
+    "name": "update_command_block"
+  },
+  {
+    "id": 56,
+    "official": "minecraft:set_command_minecart",
+    "name": "update_command_block_minecart"
+  },
+  {
+    "id": 57,
+    "official": "minecraft:set_creative_mode_slot",
+    "name": "set_creative_slot"
+  },
+  {
+    "id": 58,
+    "official": "minecraft:set_game_rule",
+    "name": "set_game_rule"
+  },
+  {
+    "id": 59,
+    "official": "minecraft:set_jigsaw_block",
+    "name": "update_jigsaw_block"
+  },
+  {
+    "id": 60,
+    "official": "minecraft:set_structure_block",
+    "name": "update_structure_block"
+  },
+  {
+    "id": 61,
+    "official": "minecraft:set_test_block",
+    "name": "set_test_block"
+  },
+  {
+    "id": 62,
+    "official": "minecraft:sign_update",
+    "name": "update_sign"
+  },
+  {
+    "id": 63,
+    "official": "minecraft:spectator_action",
+    "name": "spectator_action"
+  },
+  {
+    "id": 64,
+    "official": "minecraft:teleport_to_entity",
+    "name": "teleport_to_entity"
+  },
+  {
+    "id": 65,
+    "official": "minecraft:test_instance_block_action",
+    "name": "test_instance_block_action"
+  },
+  {
+    "id": 66,
+    "official": "minecraft:use_item_on",
+    "name": "block_place"
+  },
+  {
+    "id": 67,
+    "official": "minecraft:use_item",
+    "name": "use_item"
+  },
+  {
+    "id": 68,
+    "official": "minecraft:custom_click_action",
+    "name": "custom_click_action"
+  }
+]

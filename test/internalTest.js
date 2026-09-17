@@ -476,6 +476,7 @@ for (const supportedVersion of mineflayer.testedVersions) {
             const replies = []
             client.on('packet', (data, meta) => {
               if (meta.name === 'position_look') replies.push([data.x, data.y, data.z])
+              if (bot.registry.version['>=']('26.3') && meta.name === 'teleport_confirm') replies.push([data.x, data.y, data.z])
             })
             await client.write('position', teleport(0, 1.5, 80, 1.5))
             while (replies.length === 0) await once(client, 'packet')
@@ -488,7 +489,10 @@ for (const supportedVersion of mineflayer.testedVersions) {
             // Outlive the 1.5 s reply delay.
             await sleep(1700)
 
-            assert.deepStrictEqual(replies, [[1.5, 66, 1.5]], `teleport replies: ${JSON.stringify(replies)}`)
+            const expectedReplies = bot.registry.version['>=']('26.3')
+              ? [[3.5, 80, 3.5], [1.5, 66, 1.5]]
+              : [[1.5, 66, 1.5]]
+            assert.deepStrictEqual(replies, expectedReplies, `teleport replies: ${JSON.stringify(replies)}`)
             done()
           } catch (err) {
             done(err)

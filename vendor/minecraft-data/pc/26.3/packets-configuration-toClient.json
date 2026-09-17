@@ -1,0 +1,107 @@
+[
+  {
+    "id": 0,
+    "official": "minecraft:cookie_request",
+    "name": "cookie_request"
+  },
+  {
+    "id": 1,
+    "official": "minecraft:custom_payload",
+    "name": "custom_payload"
+  },
+  {
+    "id": 2,
+    "official": "minecraft:disconnect",
+    "name": "disconnect"
+  },
+  {
+    "id": 3,
+    "official": "minecraft:finish_configuration",
+    "name": "finish_configuration"
+  },
+  {
+    "id": 4,
+    "official": "minecraft:keep_alive",
+    "name": "keep_alive"
+  },
+  {
+    "id": 5,
+    "official": "minecraft:ping",
+    "name": "ping"
+  },
+  {
+    "id": 6,
+    "official": "minecraft:reset_chat",
+    "name": "reset_chat"
+  },
+  {
+    "id": 7,
+    "official": "minecraft:registry_data",
+    "name": "registry_data"
+  },
+  {
+    "id": 8,
+    "official": "minecraft:resource_pack_pop",
+    "name": "remove_resource_pack"
+  },
+  {
+    "id": 9,
+    "official": "minecraft:resource_pack_push",
+    "name": "add_resource_pack"
+  },
+  {
+    "id": 10,
+    "official": "minecraft:post_effects",
+    "name": "post_effects"
+  },
+  {
+    "id": 11,
+    "official": "minecraft:store_cookie",
+    "name": "store_cookie"
+  },
+  {
+    "id": 12,
+    "official": "minecraft:transfer",
+    "name": "transfer"
+  },
+  {
+    "id": 13,
+    "official": "minecraft:update_enabled_features",
+    "name": "feature_flags"
+  },
+  {
+    "id": 14,
+    "official": "minecraft:update_tags",
+    "name": "tags"
+  },
+  {
+    "id": 15,
+    "official": "minecraft:select_known_packs",
+    "name": "select_known_packs"
+  },
+  {
+    "id": 16,
+    "official": "minecraft:custom_report_details",
+    "name": "custom_report_details"
+  },
+  {
+    "id": 17,
+    "official": "minecraft:server_links",
+    "name": "server_links"
+  },
+  {
+    "id": 18,
+    "official": "minecraft:clear_dialog",
+    "name": "clear_dialog"
+  },
+  {
+    "id": 19,
+    "official": "minecraft:show_dialog",
+    "name": "show_dialog"
+  },
+  {
+    "id": 20,
+    "official": "minecraft:code_of_conduct",
+    "name": "code_of_conduct"
+  }
+]

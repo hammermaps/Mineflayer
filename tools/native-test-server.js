@@ -11,7 +11,7 @@ protocol.createServer = function (options) {
     host: '127.0.0.1',
     beforeLogin (client) {
       beforeLogin?.(client)
-      if (options.version !== '26.2') return
+      if (!['26.2', '26.3'].includes(options.version)) return
       const write = client.write
       client.write = function (name, data) {
         if (name === 'success') {

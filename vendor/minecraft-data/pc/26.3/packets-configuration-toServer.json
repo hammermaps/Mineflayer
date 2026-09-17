@@ -1,0 +1,52 @@
+[
+  {
+    "id": 0,
+    "official": "minecraft:client_information",
+    "name": "settings"
+  },
+  {
+    "id": 1,
+    "official": "minecraft:cookie_response",
+    "name": "cookie_response"
+  },
+  {
+    "id": 2,
+    "official": "minecraft:custom_payload",
+    "name": "custom_payload"
+  },
+  {
+    "id": 3,
+    "official": "minecraft:finish_configuration",
+    "name": "finish_configuration"
+  },
+  {
+    "id": 4,
+    "official": "minecraft:keep_alive",
+    "name": "keep_alive"
+  },
+  {
+    "id": 5,
+    "official": "minecraft:pong",
+    "name": "pong"
+  },
+  {
+    "id": 6,
+    "official": "minecraft:resource_pack",
+    "name": "resource_pack_receive"
+  },
+  {
+    "id": 7,
+    "official": "minecraft:select_known_packs",
+    "name": "select_known_packs"
+  },
+  {
+    "id": 8,
+    "official": "minecraft:custom_click_action",
+    "name": "custom_click_action"
+  },
+  {
+    "id": 9,
+    "official": "minecraft:accept_code_of_conduct",
+    "name": "accept_code_of_conduct"
+  }
+]

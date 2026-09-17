@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
 const { join } = require('node:path')
 const { runInNewContext } = require('node:vm')
-for (const version of ['1.8.8', '26.2']) {
+for (const version of ['1.8.8', '26.2', '26.3']) {
   test(`test-server session adapter ${version}`, () => {
     const protocol = { createServer: options => options }
     runInNewContext(readFileSync(join(__dirname, 'native-test-server.js'), 'utf8'), {
@@ -21,7 +21,7 @@ for (const version of ['1.8.8', '26.2']) {
     assert.equal(options.host, '127.0.0.1')
     assert.equal(packets[0].name, 'compress')
     assert.equal(client.write, originalWrite)
-    if (version === '26.2') assert.match(packets[1].data.sessionId, /^[a-f0-9-]{36}$/)
+    if (['26.2', '26.3'].includes(version)) assert.match(packets[1].data.sessionId, /^[a-f0-9-]{36}$/)
     else assert.equal(packets[1].data.sessionId, undefined)
   })
 }
