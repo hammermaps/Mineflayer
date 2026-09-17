@@ -44,15 +44,22 @@ function createCommandHandler (worker) {
     }
     if (command === 'patrol') {
       const [subcommand, areaName] = args
-      if (subcommand === 'stop') { worker.stopRole('patrol'); return reply('Patrouille angehalten.') }
+      if (subcommand === 'stop') return reply(worker.stopRole('patrol', areaName) ? 'Patrouille angehalten.' : 'Keine passende Patrouille ist aktiv.')
       if (subcommand !== 'start' || !worker.config.areas[areaName]) throw new Error('Verwendung: /worker patrol start <area>')
       worker.startPatrol(areaName); return reply(`Patrouille in ${areaName} gestartet.`)
     }
     if (command === 'guard') {
       const [subcommand, areaName] = args
-      if (subcommand === 'stop') { worker.stopRole('guard'); return reply('Wachdienst angehalten.') }
+      if (subcommand === 'stop') return reply(worker.stopRole('guard', areaName) ? 'Wachdienst angehalten.' : 'Kein passender Wachdienst ist aktiv.')
       if (subcommand !== 'start' || !worker.config.areas[areaName]) throw new Error('Verwendung: /worker guard start <area>')
       worker.startGuard(areaName); return reply(`Wachdienst in ${areaName} gestartet.`)
+    }
+    if (command === 'follow') {
+      const [playerName] = args
+      if (playerName?.toLowerCase() === 'stop' && args.length === 1) return reply(worker.stopRole('follow') ? 'Folgen angehalten.' : 'Es ist kein Folgen aktiv.')
+      if (args.length > 1) throw new Error('Verwendung: /worker follow [spieler]|stop')
+      const target = playerName || message.playerName
+      worker.startFollow(target); return reply(`Folgt ${target} mit 3 Blöcken Abstand.`)
     }
     if (command === 'deposit') {
       const [kind, chestName] = args

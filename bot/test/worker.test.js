@@ -6,7 +6,7 @@ const { parseGatewayMessage } = require('../src/schema')
 const { TaskQueue } = require('../src/queue')
 const { bestEquipment } = require('../src/equipment')
 const { validateArea } = require('../src/commands')
-const { isWood } = require('../src/services')
+const { isWood, shouldUseCreativeFlight } = require('../src/services')
 
 describe('WorkerBot foundation', () => {
   const message = { requestId: 'id', playerUuid: 'uuid', playerName: 'Op', world: 'minecraft:overworld', position: { x: 1, y: 64, z: 1 }, command: 'status', args: [] }
@@ -27,4 +27,10 @@ describe('WorkerBot foundation', () => {
     assert.equal(selection.head.name, 'diamond_helmet'); assert.equal(selection.weapon.name, 'iron_sword')
   })
   it('recognizes only storable log wood', () => { assert.equal(isWood({ name: 'oak_log' }), true); assert.equal(isWood({ name: 'oak_planks' }), false) })
+  it('uses creative flight only for an elevated airborne follow target', () => {
+    const bot = { abilities: { mayFly: true }, creative: {}, entity: { position: { y: 64 } } }
+    assert.equal(shouldUseCreativeFlight(bot, { position: { y: 67 }, onGround: false }, false), true)
+    assert.equal(shouldUseCreativeFlight(bot, { position: { y: 65 }, onGround: true }, false), false)
+    assert.equal(shouldUseCreativeFlight({ ...bot, abilities: { mayFly: false } }, { position: { y: 67 }, onGround: false }, false), false)
+  })
 })

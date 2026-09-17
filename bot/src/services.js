@@ -52,4 +52,10 @@ function insideArea (entity, area) {
   return x >= Math.min(area.pos1.x, area.pos2.x) && x <= Math.max(area.pos1.x, area.pos2.x) && y >= Math.min(area.pos1.y, area.pos2.y) - 3 && y <= Math.max(area.pos1.y, area.pos2.y) + 6 && z >= Math.min(area.pos1.z, area.pos2.z) && z <= Math.max(area.pos1.z, area.pos2.z)
 }
 
-module.exports = { woodNames, isWood, findBlock, goNear, depositWood, patrolPoints, insideArea }
+function shouldUseCreativeFlight (bot, target, flightActive) {
+  if (!bot.abilities?.mayFly || !bot.creative) return false
+  const verticalDistance = target.position.y - bot.entity.position.y
+  return (verticalDistance > 2 && !target.onGround) || (flightActive && (!target.onGround || verticalDistance > 1))
+}
+
+module.exports = { woodNames, isWood, findBlock, goNear, depositWood, patrolPoints, insideArea, shouldUseCreativeFlight }

@@ -5,7 +5,7 @@ const mineflayer = require('../..')
 const { loadConfig } = require('./config')
 const { parseGatewayMessage } = require('./schema')
 const { TaskQueue } = require('./queue')
-const { patrolPoints, goNear, insideArea } = require('./services')
+const { patrolPoints, goNear, insideArea, shouldUseCreativeFlight } = require('./services')
 const { createCommandHandler } = require('./commands')
 
 const configPath = path.resolve(process.env.WORKER_CONFIG || path.join(__dirname, '..', 'config.json'))
@@ -21,7 +21,8 @@ class Worker {
   constructor (bot, config, configPath) {
     this.bot = bot; this.config = config; this.configPath = configPath
     this.queue = new TaskQueue(); this.positions = {}; this.role = null; this.patrolIndex = 0
-    this.patrolRunId = 0; this.patrolTimer = null; this.patrolBusy = false
+    this.patrolRunId = 0; this.patrolTimer = null; this.patrolBusy = false; this.followTimer = null
+    this.followFlightActive = false; this.followFlightTask = null
     this.handle = createCommandHandler(this)
   }
 
@@ -38,10 +39,17 @@ class Worker {
   stop () {
     this.patrolRunId++
     clearTimeout(this.patrolTimer); this.patrolTimer = null; this.patrolBusy = false
+    clearInterval(this.followTimer); this.followTimer = null
+    this.stopFollowFlight()
     this.bot.pathfinder?.setGoal(null); this.queue.stop(); this.role = null
   }
 
-  stopRole (type) { if (this.role?.type === type) this.stop() }
+  stopRole (type, areaName) {
+    if (this.role?.type !== type) return false
+    if (areaName && this.role.areaName !== areaName) return false
+    this.stop()
+    return true
+  }
 
   startPatrol (areaName) {
     const area = this.config.areas[areaName]
@@ -53,6 +61,61 @@ class Worker {
     const area = this.config.areas[areaName]
     this.role = { type: 'guard', areaName, area }; this.patrolIndex = 0; this.patrolRunId++
     this.queue.start({ name: 'guard-patrol', priority: 20 }); this.advancePatrol(this.patrolRunId)
+  }
+
+  findPlayer (playerName) {
+    const wanted = playerName.toLowerCase()
+    return Object.values(this.bot.players).find(player => player.username?.toLowerCase() === wanted)?.entity
+  }
+
+  startFollow (playerName) {
+    if (!this.bot.pathfinder) throw new Error('Pathfinder ist nicht geladen.')
+    if (playerName.toLowerCase() === this.bot.username.toLowerCase()) throw new Error('WorkerBot kann sich nicht selbst folgen.')
+    if (!this.findPlayer(playerName)) throw new Error(`Spieler ${playerName} ist nicht sichtbar oder nicht in derselben Welt.`)
+    this.stop()
+    this.role = { type: 'follow', playerName }; this.queue.start({ name: 'follow', priority: 30 })
+    this.refreshFollow()
+    this.followTimer = setInterval(() => this.refreshFollow(), 1000)
+  }
+
+  refreshFollow () {
+    if (this.role?.type !== 'follow') return
+    const target = this.findPlayer(this.role.playerName)
+    if (!target) { this.bot.pathfinder.setGoal(null); return }
+    if (this.shouldFlyToFollow(target)) {
+      this.followByFlight(target)
+      return
+    }
+    this.stopFollowFlight()
+    const { goals } = require('mineflayer-pathfinder')
+    this.bot.pathfinder.setGoal(new goals.GoalFollow(target, 3), true)
+  }
+
+  shouldFlyToFollow (target) {
+    return shouldUseCreativeFlight(this.bot, target, this.followFlightActive)
+  }
+
+  followByFlight (target) {
+    this.bot.pathfinder.setGoal(null)
+    if (!this.followFlightActive) {
+      this.bot._client.write('abilities', { flags: 0x02 })
+      this.bot.creative.startFlying()
+      this.followFlightActive = true
+    }
+    if (this.followFlightTask) return
+    const offset = this.bot.entity.position.minus(target.position); offset.y = 0
+    const length = Math.hypot(offset.x, offset.z) || 1
+    const destination = target.position.offset((offset.x / length) * 3, 0, (offset.z / length) * 3)
+    this.followFlightTask = this.bot.creative.flyTo(destination)
+      .catch(error => console.warn(`Flugfolgen: ${error.message}`))
+      .finally(() => { this.followFlightTask = null })
+  }
+
+  stopFollowFlight () {
+    if (!this.followFlightActive) return
+    this.bot._client.write('abilities', { flags: 0 })
+    this.bot.creative?.stopFlying()
+    this.followFlightActive = false
   }
 
   async advancePatrol (runId = this.patrolRunId) {

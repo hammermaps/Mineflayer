@@ -5,4 +5,4 @@ api-version: '1.21'
 commands:
   worker:
     description: Sendet einen OP-geprüften Befehl an WorkerBot.
-    usage: /worker <status|stop|equip|pos1|pos2|area|chest|patrol|guard|deposit|find>
+    usage: /worker <status|stop|equip|pos1|pos2|area|chest|patrol|guard|follow|deposit|find>

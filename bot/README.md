@@ -15,7 +15,7 @@ Die erste Änderung über `/worker area ...` oder `/worker chest ...` legt die l
 
 ## OP-Befehle
 
-`/worker status`, `stop`, `equip`, `pos1`, `pos2`, `area save <guard|farm|forest> <name>`, `chest set <name>`, `patrol start <area>`, `patrol stop`, `guard start <area>`, `guard stop`, `deposit wood <chest>` und `find <resource> [radius]`.
+Eine vollständige Referenz mit Beispielen steht in [BEFEHLE.md](BEFEHLE.md). Kurzform: `/worker status`, `stop`, `equip`, `pos1`, `pos2`, `area save <guard|farm|forest> <name>`, `chest set <name>`, `patrol start <area>`, `patrol stop`, `guard start <area>`, `guard stop`, `follow [spieler]`, `follow stop`, `deposit wood <chest>` und `find <resource> [radius]`.
 
 Wache und Patrouille verwenden den gespeicherten Bereich. Nur die in `roles.guard.allowedMobs` konfigurierte feindliche Mobliste wird innerhalb dieses Bereichs angegriffen. Eine Verteidigung unterbricht die Patrouille und führt sie danach fort. Farmer und Förster enthalten bereits Bereich-, Ressourcen-, Werkzeug- und Lagerverträge; Fällen, Aufforsten, Feldanlage und Ernte sind bewusst noch nicht implementiert.
 
