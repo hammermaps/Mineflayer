@@ -1,0 +1,10 @@
+{
+  "areas": {},
+  "chests": {},
+  "patrols": {},
+  "roles": {
+    "guard": { "allowedMobs": ["zombie", "skeleton", "creeper", "spider", "drowned", "husk", "stray", "phantom", "witch"], "attackRange": 3.5 },
+    "farmer": { "resources": ["wheat", "carrots", "potatoes", "beetroots"], "tool": "hoe", "storage": null },
+    "forester": { "resources": ["oak_log", "birch_log", "spruce_log", "jungle_log", "acacia_log", "dark_oak_log", "mangrove_log", "cherry_log"], "tool": "axe", "storage": null }
+  }
+}

@@ -1,0 +1,2 @@
+# Must match WORKER_USERNAME. Only this player receives gateway payloads.
+bot-player-name: WorkerBot

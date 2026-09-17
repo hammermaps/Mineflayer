@@ -180,10 +180,10 @@ for state in ('configuration', 'play'):
 # Mojang 26.3 encodes light masks as length-prefixed little-endian BitSet bytes.
 # prismarine-chunk still consumes its historical long-pair representation; the
 # client plugin converts these buffers at the boundary.
-map_chunk = protocol['play']['toClient']['types']['packet_map_chunk'][1]
-for field in map_chunk:
-    if field['name'] in ('skyLightMask', 'blockLightMask', 'emptySkyLightMask', 'emptyBlockLightMask'):
-        field['type'] = 'ByteArray'
+for packet_name in ('packet_map_chunk', 'packet_update_light'):
+    for field in protocol['play']['toClient']['types'][packet_name][1]:
+        if field['name'] in ('skyLightMask', 'blockLightMask', 'emptySkyLightMask', 'emptyBlockLightMask'):
+            field['type'] = 'ByteArray'
 
 # ServerboundAcceptTeleportationPacket now echoes the accepted position too.
 protocol['play']['toServer']['types']['packet_teleport_confirm'] = container(
@@ -207,6 +207,23 @@ vec_delta = ['switch', {'compareTo': 'properties', 'fields': vec_delta_fields}]
 protocol['play']['toClient']['types']['packet_rel_entity_move'] = container(entityId='varint', properties='varint', delta=vec_delta)
 protocol['play']['toClient']['types']['packet_entity_move_look'] = container(entityId='varint', properties='varint', delta=copy.deepcopy(vec_delta), yaw='i8', pitch='i8')
 protocol['play']['toClient']['types']['packet_entity_look'] = container(entityId='varint', onGround='bool', yaw='i8', pitch='i8')
+
+# EntityPositionSync now carries a PositionPath instead of the former velocity
+# Vec3. The path starts with its kind: linear has one Vec3, stepped has a
+# varint-sized sequence of Vec3/tick-offset pairs. Keeping this separate from
+# VecDelta is essential: the sync packet stores absolute positions.
+protocol['types']['PositionPathLinear'] = container(x='f64', y='f64', z='f64')
+protocol['types']['PositionPathStep'] = container(x='f64', y='f64', z='f64', tickOffset='varint')
+position_path = ['switch', {
+    'compareTo': 'positionPathType',
+    'fields': {
+        '0': 'PositionPathLinear',
+        '1': array('PositionPathStep')
+    }
+}]
+protocol['play']['toClient']['types']['packet_sync_entity_position'] = container(
+    entityId='varint', positionPathType='varint', positionPath=position_path,
+    yRot='f32', xRot='f32', onGround='bool')
 
 # PositionedAdvancement moved its coordinates outside optional display data in
 # 26.3, so they are present even for entries without a display.

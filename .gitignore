@@ -13,3 +13,8 @@ test/server_*
 .DS_Store
 launcher_accounts.json
 data
+/bot/.env
+/bot/config.json
+/bot/state.json
+/bot/worker.log
+/bot/paper-worker-gateway/target/

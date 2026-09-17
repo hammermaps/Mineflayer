@@ -7,6 +7,7 @@
   "scripts": {
     "mocha_test": "mocha --require ./tools/native-test-server.js --reporter ./test/common/durationsReporter.js --exit",
     "test": "npm run mocha_test",
+    "bot:test": "mocha --reporter spec bot/test/**/*.test.js",
     "pretest": "npm run lint",
     "lint": "standard && standard-markdown",
     "fix": "standard --fix && standard-markdown --fix",
@@ -40,7 +41,8 @@
     "protodef": "^1.18.0",
     "typed-emitter": "^1.0.0",
     "uuid-1345": "^1.0.2",
-    "vec3": "^0.1.7"
+    "vec3": "^0.1.7",
+    "mineflayer-pathfinder": "^2.4.5"
   },
   "devDependencies": {
     "@types/node": "^25.2.1",

@@ -1,0 +1,8 @@
+name: PaperWorkerGateway
+version: 1.0.0
+main: local.worker.gateway.WorkerGateway
+api-version: '1.21'
+commands:
+  worker:
+    description: Sendet einen OP-geprüften Befehl an WorkerBot.
+    usage: /worker <status|stop|equip|pos1|pos2|area|chest|patrol|guard|deposit|find>

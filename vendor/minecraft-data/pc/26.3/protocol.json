@@ -5278,6 +5278,44 @@
         }
       ]
     ],
+    "PositionPathLinear": [
+      "container",
+      [
+        {
+          "name": "x",
+          "type": "f64"
+        },
+        {
+          "name": "y",
+          "type": "f64"
+        },
+        {
+          "name": "z",
+          "type": "f64"
+        }
+      ]
+    ],
+    "PositionPathStep": [
+      "container",
+      [
+        {
+          "name": "x",
+          "type": "f64"
+        },
+        {
+          "name": "y",
+          "type": "f64"
+        },
+        {
+          "name": "z",
+          "type": "f64"
+        },
+        {
+          "name": "tickOffset",
+          "type": "varint"
+        }
+      ]
+    ],
     "VecDeltaStep": [
       "container",
       [
@@ -7292,35 +7330,34 @@
               "type": "varint"
             },
             {
-              "name": "x",
-              "type": "f64"
+              "name": "positionPathType",
+              "type": "varint"
             },
             {
-              "name": "y",
-              "type": "f64"
+              "name": "positionPath",
+              "type": [
+                "switch",
+                {
+                  "compareTo": "positionPathType",
+                  "fields": {
+                    "0": "PositionPathLinear",
+                    "1": [
+                      "array",
+                      {
+                        "countType": "varint",
+                        "type": "PositionPathStep"
+                      }
+                    ]
+                  }
+                }
+              ]
             },
             {
-              "name": "z",
-              "type": "f64"
-            },
-            {
-              "name": "dx",
-              "type": "f64"
-            },
-            {
-              "name": "dy",
-              "type": "f64"
-            },
-            {
-              "name": "dz",
-              "type": "f64"
-            },
-            {
-              "name": "yaw",
+              "name": "yRot",
               "type": "f32"
             },
             {
-              "name": "pitch",
+              "name": "xRot",
               "type": "f32"
             },
             {
@@ -7736,43 +7773,19 @@
             },
             {
               "name": "skyLightMask",
-              "type": [
-                "array",
-                {
-                  "countType": "varint",
-                  "type": "i64"
-                }
-              ]
+              "type": "ByteArray"
             },
             {
               "name": "blockLightMask",
-              "type": [
-                "array",
-                {
-                  "countType": "varint",
-                  "type": "i64"
-                }
-              ]
+              "type": "ByteArray"
             },
             {
               "name": "emptySkyLightMask",
-              "type": [
-                "array",
-                {
-                  "countType": "varint",
-                  "type": "i64"
-                }
-              ]
+              "type": "ByteArray"
             },
             {
               "name": "emptyBlockLightMask",
-              "type": [
-                "array",
-                {
-                  "countType": "varint",
-                  "type": "i64"
-                }
-              ]
+              "type": "ByteArray"
             },
             {
               "name": "skyLight",
