@@ -6,7 +6,8 @@ const mc = require('minecraft-protocol')
 const assert = require('assert')
 const { sleep } = require('../lib/promise_utils')
 const nbt = require('prismarine-nbt')
-const { once } = require('../lib/promise_utils')
+const { once, onceWithCleanup } = require('../lib/promise_utils')
+const { EventEmitter } = require('events')
 const { getPort } = require('./common/util')
 
 for (const supportedVersion of mineflayer.testedVersions) {
@@ -68,6 +69,9 @@ for (const supportedVersion of mineflayer.testedVersions) {
         port: PORT
       })
       bot.test = {}
+      // Plugins are injected on a timer after createBot, which can lose the
+      // race against the mock server's playerJoin
+      bot.test.pluginsLoaded = new Promise(resolve => bot.once('inject_allowed', resolve))
 
       bot.test.buildChunk = () => {
         if (bot.supportFeature('tallWorld')) {
@@ -102,9 +106,8 @@ for (const supportedVersion of mineflayer.testedVersions) {
       }
     })
     afterEach((done) => {
-      bot.on('end', () => {
-        done()
-      })
+      if (bot._client.ended) done()
+      else bot.on('end', () => done())
       server.close()
     })
     it('chat', (done) => {
@@ -190,6 +193,23 @@ for (const supportedVersion of mineflayer.testedVersions) {
         client.on('chat_message', onChat)
         client.on('chat', onChat)
       })
+    })
+    it('chat before login throws a descriptive error', async () => {
+      await once(bot, 'inject_allowed')
+      const early = /before the client entered the play state; wait for/
+      assert.throws(() => bot.chat('hi'), early)
+      assert.throws(() => bot.whisper('gary', 'hi'), early)
+    })
+    it('chat after a kick during login throws a descriptive error', async () => {
+      // Replaces the server's login handler so the client is rejected while still in the login state.
+      server.on('connection', (client) => {
+        client.removeAllListeners('login_start')
+        client.once('login_start', () => client.end('kicked'))
+      })
+      const [reason] = await once(bot, 'end')
+      const kicked = new RegExp(`disconnected before entering the play state \\(${reason}\\)`)
+      assert.throws(() => bot.chat('hi'), kicked)
+      assert.throws(() => bot.whisper('gary', 'hi'), kicked)
     })
     it('entity effects', (done) => {
       bot.once('entityEffect', (entity, effect) => {
@@ -397,6 +417,84 @@ for (const supportedVersion of mineflayer.testedVersions) {
           done()
         })
       })
+      it('drops the tick backlog after an event-loop stall instead of draining it', (done) => {
+        server.on('playerJoin', async (client) => {
+          client.write('login', bot.test.generateLoginPacket())
+          const chunk = bot.test.buildChunk()
+          chunk.setBlockType(pos, goldId)
+          await client.write('map_chunk', generateChunkPacket(chunk))
+          await client.write('position', {
+            x: 1.5,
+            y: 66,
+            z: 1.5,
+            dx: 0,
+            dy: 0,
+            dz: 0,
+            pitch: 0,
+            yaw: 0,
+            teleportId: 1,
+            flags: bot.supportFeature('positionPacketHasBitflags') ? { x: false, y: false, z: false, yaw: false, pitch: false } : 0
+          })
+          await once(bot, 'physicsTick')
+          await sleep(300)
+          // No physics tick can run during the stall (30 ticks' worth).
+          const stallUntil = Date.now() + 1500
+          while (Date.now() < stallUntil) { /* busy wait */ }
+          let ticks = 0
+          const count = () => ticks++
+          bot.on('physicsTick', count)
+          await sleep(500)
+          bot.off('physicsTick', count)
+          // 10 ticks at 20 tps plus one burst of at most maxCatchupTicks (4).
+          assert.ok(ticks <= 18, `${ticks} physics ticks in the 500 ms after a 1.5 s stall`)
+          assert.ok(ticks >= 8, `only ${ticks} physics ticks in 500 ms`)
+          done()
+        })
+      })
+      it('answers only the latest teleport when a second one lands inside the respawn reply delay', (done) => {
+        // After a death the reply to the next teleport waits 1.5 s. A teleport that arrives inside
+        // that window replaces it: the deferred reply must not go out with the older coordinates.
+        const teleport = (teleportId, x, y, z) => ({
+          x,
+          y,
+          z,
+          dx: 0,
+          dy: 0,
+          dz: 0,
+          pitch: 0,
+          yaw: 0,
+          flags: bot.supportFeature('positionPacketHasBitflags') ? {} : 0,
+          teleportId
+        })
+        server.on('playerJoin', async (client) => {
+          try {
+            await client.write('login', bot.test.generateLoginPacket())
+            const chunk = bot.test.buildChunk()
+            chunk.setBlockType(pos, goldId)
+            await client.write('map_chunk', generateChunkPacket(chunk))
+            await once(bot, 'chunkColumnLoad')
+            const replies = []
+            client.on('packet', (data, meta) => {
+              if (meta.name === 'position_look') replies.push([data.x, data.y, data.z])
+            })
+            await client.write('position', teleport(0, 1.5, 80, 1.5))
+            while (replies.length === 0) await once(client, 'packet')
+            replies.length = 0
+
+            bot.emit('death')
+            await client.write('position', teleport(1, 3.5, 80, 3.5))
+            await sleep(100)
+            await client.write('position', teleport(2, 1.5, 66, 1.5))
+            // Outlive the 1.5 s reply delay.
+            await sleep(1700)
+
+            assert.deepStrictEqual(replies, [[1.5, 66, 1.5]], `teleport replies: ${JSON.stringify(replies)}`)
+            done()
+          } catch (err) {
+            done(err)
+          }
+        })
+      })
       it('gravity + land on solid block + jump', (done) => {
         let y = 80
         let landed = false
@@ -430,6 +528,164 @@ for (const supportedVersion of mineflayer.testedVersions) {
             teleportId: 0
           })
         })
+      })
+      it('no movement packets during a server transfer configuration phase', function (done) {
+        // Regression test for https://github.com/PrismarineJS/mineflayer/issues/3776
+        // While the client is in the configuration phase (Velocity/BungeeCord server
+        // transfer), sending play-state movement packets gets the bot kicked.
+        // NOTE: the mock server's client.on('packet') cannot be used here, because
+        // the server-side mock connection stays in the play state while only the
+        // bot's client transitions to configuration — outbound movement packets then
+        // fail to deserialize on the mock server and are silently dropped. Intercept
+        // the bot's own client.write() instead, which directly captures what the bot
+        // attempts to send, whatever the state.
+        if (!bot.supportFeature('hasConfigurationState')) {
+          this.skip()
+          return
+        }
+        const positionPacket = {
+          x: 1.5,
+          y: 80,
+          z: 1.5,
+          dx: 0,
+          dy: 0,
+          dz: 0,
+          pitch: 0,
+          yaw: 0,
+          flags: bot.registry.version['>=']('1.21.3') ? {} : 0,
+          teleportId: 0
+        }
+        const movementPackets = ['position', 'position_look', 'look', 'flying']
+        let phase = 'play'
+        let movementDuringConfig = 0
+        server.on('playerJoin', async (client) => {
+          const originalWrite = bot._client.write.bind(bot._client)
+          bot._client.write = (name, params) => {
+            if (phase === 'configuration' && movementPackets.includes(name)) {
+              movementDuringConfig++
+            }
+            return originalWrite(name, params)
+          }
+
+          await client.write('login', bot.test.generateLoginPacket())
+          const chunk = bot.test.buildChunk()
+          chunk.setBlockType(pos, goldId)
+          await client.write('map_chunk', generateChunkPacket(chunk))
+          await once(bot, 'chunkColumnLoad')
+          // The initial position enables physics and movement packets
+          const p1 = once(bot, 'forcedMove')
+          await client.write('position', positionPacket)
+          await p1
+
+          // Wait until the in-flight teleport response has been sent so it is
+          // not miscounted, then have the proxy pull the client back into the
+          // configuration phase.
+          await sleep(100)
+          await client.write('start_configuration', {})
+          // Confirm the client state actually flipped before observing.
+          if (bot._client.state !== 'configuration') {
+            await once(bot._client, 'state')
+          }
+          phase = 'configuration'
+          await sleep(500)
+          phase = 'play'
+
+          assert.strictEqual(movementDuringConfig, 0,
+            `physics loop sent ${movementDuringConfig} movement packet(s) during configuration phase`)
+          done()
+        })
+      })
+
+      it('cancels the delayed respawn teleport reply when a transfer lands inside its delay', function (done) {
+        // After a death the reply to the respawn teleport is deferred 1.5 s. A proxy transfer that
+        // starts inside that window must not make the timer write a play packet in the
+        // configuration state.
+        if (!bot.supportFeature('hasConfigurationState')) {
+          this.skip()
+          return
+        }
+        const positionPacket = {
+          x: 1.5,
+          y: 80,
+          z: 1.5,
+          dx: 0,
+          dy: 0,
+          dz: 0,
+          pitch: 0,
+          yaw: 0,
+          flags: bot.supportFeature('positionPacketHasBitflags') ? {} : 0,
+          teleportId: 0
+        }
+        const movementPackets = ['position', 'position_look', 'look', 'flying']
+        const sent = []
+        server.on('playerJoin', async (client) => {
+          try {
+            const originalWrite = bot._client.write.bind(bot._client)
+            bot._client.write = (name, params) => {
+              if (movementPackets.includes(name)) sent.push(`${name} in ${bot._client.state}`)
+              return originalWrite(name, params)
+            }
+
+            await client.write('login', bot.test.generateLoginPacket())
+            const chunk = bot.test.buildChunk()
+            chunk.setBlockType(pos, goldId)
+            await client.write('map_chunk', generateChunkPacket(chunk))
+            await once(bot, 'chunkColumnLoad')
+            const p1 = once(bot, 'forcedMove')
+            await client.write('position', positionPacket)
+            await p1
+
+            bot.emit('death')
+            sent.length = 0
+            await client.write('position', { ...positionPacket, teleportId: 1 })
+            await sleep(100)
+            await client.write('start_configuration', {})
+            if (bot._client.state !== 'configuration') {
+              await once(bot._client, 'state')
+            }
+            // Outlive the 1.5 s reply delay.
+            await sleep(1700)
+
+            assert.deepStrictEqual(sent, [], `movement packets written after the transfer began: ${sent.join(', ')}`)
+            done()
+          } catch (err) {
+            done(err)
+          }
+        })
+      })
+      it('accepts a configuration-phase resource pack with the real UUID bytes', function () {
+        // The accept must carry the pack's real UUID bytes; a uuid-1345 object serializes to
+        // 16 zero bytes.
+        // The mock server never reaches the configuration phase, so the plugin is driven directly.
+        if (!registry.supportFeature('resourcePackUsesUUID')) {
+          this.skip()
+          return
+        }
+        const packUuid = '8ef4746b-93b7-3c32-9dcb-b375016c114d'
+        const expectedBytes = Buffer.from(packUuid.replace(/-/g, ''), 'hex')
+        const serializer = mc.createSerializer({ state: 'configuration', isServer: false, version: supportedVersion })
+
+        const client = new EventEmitter()
+        client.state = 'configuration'
+        const writes = []
+        client.write = (name, params) => { writes.push({ name, params }) }
+        const fakeBot = new EventEmitter()
+        fakeBot._client = client
+        fakeBot.supportFeature = registry.supportFeature.bind(registry)
+        require('../lib/plugins/resource_pack')(fakeBot)
+
+        client.emit('add_resource_pack', {
+          uuid: packUuid,
+          url: 'https://example.invalid/pack.zip',
+          hash: '88b406352dc8a335b1050a4bf9577a878c812012',
+          forced: false
+        })
+
+        const accept = writes.find((w) => w.name === 'resource_pack_receive')
+        assert(accept, 'bot should answer the pack during the configuration phase')
+        const buf = serializer.createPacketBuffer({ name: accept.name, params: accept.params })
+        assert(buf.includes(expectedBytes),
+          'resource_pack_receive must carry the pack UUID bytes, not a zero UUID')
       })
     })
 
@@ -490,6 +746,7 @@ for (const supportedVersion of mineflayer.testedVersions) {
           teleportId: 0
         }
         server.on('playerJoin', async (client) => {
+          await bot.test.pluginsLoaded
           bot.once('respawn', () => {
             assert.ok(bot.world.getColumn(0, 0) !== undefined)
             bot.once('respawn', () => {
@@ -546,6 +803,59 @@ for (const supportedVersion of mineflayer.testedVersions) {
         })
       })
 
+      it('window titles are ChatMessages whatever shape the server sends', async () => {
+        const Item = require('prismarine-item')(registry)
+        // A component title plus the bare-string form third-party servers send.
+        const titles = registry.supportFeature('chatPacketsUseNbtComponents')
+          ? [nbt.comp({ text: nbt.string('Test Chest') }), nbt.string('Test Chest')]
+          : [JSON.stringify({ text: 'Test Chest' }), 'Test Chest']
+        const chest = registry.supportFeature('village&pillageInventoryWindows')
+          ? { inventoryType: 2 }
+          : { inventoryType: 'minecraft:chest', slotCount: 27 }
+        const [client] = await once(server, 'playerJoin')
+        client.write('login', bot.test.generateLoginPacket())
+        for (const [i, windowTitle] of titles.entries()) {
+          const windowId = i + 1
+          client.write('open_window', { windowId, windowTitle, ...chest })
+          client.write('window_items', { windowId, stateId: 0, items: [], carriedItem: Item.toNotch(null) })
+          const [window] = await once(bot, 'windowOpen')
+          assert.strictEqual(window.id, windowId)
+          assert.strictEqual(window.title.constructor.name, 'ChatMessage')
+          assert.strictEqual(window.title.toString(), 'Test Chest')
+        }
+      })
+
+      it('closeWindow follows close_window with a no-op inventory click on pre-1.17 only', (done) => {
+        server.on('playerJoin', (client) => {
+          const clicks = []
+          let closed = false
+          client.on('packet', (data, meta) => {
+            if (meta.name === 'close_window') closed = true
+            if (meta.name !== 'window_click') return
+            clicks.push(data)
+            assert.ok(closed, 'the sync click must follow close_window')
+            client.write('transaction', { windowId: data.windowId, action: data.action, accepted: true })
+          })
+          const loggedIn = once(bot, 'login')
+          client.write('login', bot.test.generateLoginPacket())
+          loggedIn
+            .then(() => bot.closeWindow(bot.inventory))
+            .then(() => sleep(100))
+            .then(() => {
+              if (bot.supportFeature('stateIdUsed')) {
+                assert.strictEqual(clicks.length, 0)
+              } else {
+                assert.strictEqual(clicks.length, 1)
+                assert.strictEqual(clicks[0].windowId, 0)
+                assert.strictEqual(clicks[0].slot, -999)
+                assert.strictEqual(clicks[0].mode, 0)
+                assert.strictEqual(clicks[0].mouseButton, 0)
+              }
+            })
+            .then(done, done)
+        })
+      })
+
       it('dimension type lookup uses worldType over worldName on 1.19-1.20.4', function (done) {
         // On proxy/modded servers the worldName (level name) may differ from
         // the dimension type. For versions with dimensionDataInCodec but
@@ -572,6 +882,98 @@ for (const supportedVersion of mineflayer.testedVersions) {
             assert.ok(bot.game.height !== undefined,
               'height should be set from codec lookup')
             done()
+          })
+        })
+      })
+    })
+
+    describe('rain', () => {
+      it('flips isRaining on rain level zero-crossings without start_raining', (done) => {
+        // Vanilla 26.1 can bring rain in with only rain_level_change ramps,
+        // never sending start_raining/stop_raining (observed on a quick
+        // weather flip), so level crossings alone must drive isRaining.
+        const mapped = JSON.stringify(registry.protocol.play.toClient.types.packet_game_state_change).includes('rain_level_change')
+        const reason = mapped ? 'rain_level_change' : 7
+        server.on('playerJoin', (client) => {
+          client.write('login', bot.test.generateLoginPacket())
+          // Plugins inject after a deferred inject_allowed, so bot state is
+          // only readable once the bot has seen login.
+          bot.once('login', () => {
+            assert.strictEqual(bot.isRaining, false)
+            bot.once('rain', () => {
+              assert.strictEqual(bot.isRaining, true)
+              bot.once('rain', () => {
+                assert.strictEqual(bot.isRaining, false)
+                assert.strictEqual(bot.rainState, 0)
+                done()
+              })
+              client.write('game_state_change', { reason, gameMode: 0 })
+            })
+            client.write('game_state_change', { reason, gameMode: 0.01 })
+            // A second wet level must not emit again: if it did, the inner
+            // once would run with isRaining still true and fail the assert.
+            client.write('game_state_change', { reason, gameMode: 0.5 })
+          })
+        })
+      })
+    })
+
+    describe('block actions', () => {
+      it('emits chestLidMove again once an open chest has been replaced', async () => {
+        const pos = vec3(1, 65, 1)
+        const chestId = bot.registry.blocksByName.chest.id
+        const location = { x: pos.x, y: pos.y, z: pos.z }
+        const [client] = await once(server, 'playerJoin')
+        client.write('login', bot.test.generateLoginPacket())
+        const chunk = bot.test.buildChunk()
+        chunk.setBlockType(pos, chestId)
+        client.write('map_chunk', generateChunkPacket(chunk))
+        await once(bot, 'chunkColumnLoad')
+        const chestStateId = bot.blockAt(pos).stateId
+
+        const opened = onceWithCleanup(bot, 'chestLidMove', { timeout: 2000 })
+        client.write('block_action', { location, byte1: 1, byte2: 1, blockId: chestId })
+        await opened
+
+        // Breaking the chest while it is open never yields a closing block
+        // action, so the open count must not survive the block change.
+        client.write('block_change', { location, type: 0 })
+        client.write('block_change', { location, type: chestStateId })
+        const reopened = onceWithCleanup(bot, 'chestLidMove', { timeout: 2000 })
+        client.write('block_action', { location, byte1: 1, byte2: 1, blockId: chestId })
+        const [block, isOpen] = await reopened
+        assert.ok(block.position.equals(pos))
+        assert.strictEqual(isOpen, 1)
+      })
+    })
+
+    describe('abilities', () => {
+      it('tracks what the server allows', (done) => {
+        server.on('playerJoin', (client) => {
+          bot.once('abilities', (abilities) => {
+            assert.strictEqual(abilities.invulnerable, true)
+            assert.strictEqual(abilities.flying, true)
+            assert.strictEqual(abilities.mayFly, true)
+            assert.strictEqual(abilities.instantBuild, false)
+            assert.strictEqual(abilities.flyingSpeed, 0.05000000074505806)
+            assert.strictEqual(abilities.walkingSpeed, 0.10000000149011612)
+            assert.strictEqual(bot.abilities, abilities)
+            // prismarine-physics reads the flight state off the entity
+            assert.strictEqual(bot.entity.flying, true)
+            done()
+          })
+          client.write('login', bot.test.generateLoginPacket())
+          bot.once('login', () => {
+            // Abilities' own defaults hold until the server sends the packet
+            assert.deepStrictEqual(bot.abilities, {
+              invulnerable: false,
+              flying: false,
+              mayFly: false,
+              instantBuild: false,
+              flyingSpeed: 0.05,
+              walkingSpeed: 0.1
+            })
+            client.write('abilities', { flags: 7, flyingSpeed: 0.05, walkingSpeed: 0.1 })
           })
         })
       })
@@ -715,6 +1117,7 @@ for (const supportedVersion of mineflayer.testedVersions) {
             assert.ok(player.skinData, 'skinData should be parsed from mojangson')
             assert.strictEqual(player.skinData.url, 'http://textures.minecraft.net/texture/abc123')
             assert.strictEqual(player.skinData.model, 'slim')
+            assert.strictEqual(player.skinData.capeUrl, undefined)
             done()
           })
 
@@ -791,6 +1194,9 @@ for (const supportedVersion of mineflayer.testedVersions) {
             SKIN: {
               url: 'http://textures.minecraft.net/texture/def456',
               metadata: { model: 'default' }
+            },
+            CAPE: {
+              url: 'http://textures.minecraft.net/texture/cape789'
             }
           }
         })
@@ -803,6 +1209,7 @@ for (const supportedVersion of mineflayer.testedVersions) {
             assert.ok(player.skinData, 'skinData should be parsed from JSON')
             assert.strictEqual(player.skinData.url, 'http://textures.minecraft.net/texture/def456')
             assert.strictEqual(player.skinData.model, 'default')
+            assert.strictEqual(player.skinData.capeUrl, 'http://textures.minecraft.net/texture/cape789')
             done()
           })
 
@@ -1235,6 +1642,165 @@ for (const supportedVersion of mineflayer.testedVersions) {
       })
     })
 
+    describe('held_item_slot', () => {
+      function collectHeldItemSlots (client) {
+        const sent = []
+        client.on('packet', (data, meta) => {
+          if (meta.name === 'held_item_slot') sent.push(data.slotId)
+        })
+        return sent
+      }
+
+      it('applies a server-sent slot equal to the carried one without echoing it', (done) => {
+        server.on('playerJoin', async (client) => {
+          try {
+            const sent = collectHeldItemSlots(client)
+            client.write('login', bot.test.generateLoginPacket())
+            client.write('held_item_slot', { slot: 0 })
+            await sleep(300)
+            assert.strictEqual(bot.quickBarSlot, 0)
+            assert.deepStrictEqual(sent, [])
+            bot.setQuickBarSlot(3)
+            await sleep(300)
+            assert.deepStrictEqual(sent, [3])
+            done()
+          } catch (err) {
+            done(err)
+          }
+        })
+      })
+
+      it('applies differing server selections without echoing, including after login', (done) => {
+        server.on('playerJoin', async (client) => {
+          try {
+            const sent = collectHeldItemSlots(client)
+            const changes = []
+            bot.on('heldItemChanged', () => changes.push(bot.quickBarSlot))
+            client.write('login', bot.test.generateLoginPacket())
+            client.write('held_item_slot', { slot: 3 })
+            await sleep(300)
+            assert.strictEqual(bot.quickBarSlot, 3)
+            assert.deepStrictEqual(sent, [])
+            assert.deepStrictEqual(changes, [3])
+            client.write('held_item_slot', { slot: 3 })
+            bot.setQuickBarSlot(3)
+            await sleep(300)
+            assert.deepStrictEqual(sent, [])
+            assert.deepStrictEqual(changes, [3])
+            client.write('login', bot.test.generateLoginPacket())
+            client.write('held_item_slot', { slot: 3 })
+            await sleep(300)
+            assert.deepStrictEqual(sent, [])
+            assert.deepStrictEqual(changes, [3])
+            client.write('held_item_slot', { slot: 0 })
+            await sleep(300)
+            assert.strictEqual(bot.quickBarSlot, 0)
+            assert.deepStrictEqual(sent, [])
+            assert.deepStrictEqual(changes, [3, 0])
+            done()
+          } catch (err) {
+            done(err)
+          }
+        })
+      })
+    })
+
+    describe('windows', () => {
+      const Item = require('prismarine-item')(supportedVersion)
+      const pWindows = require('prismarine-windows')(supportedVersion)
+      // legacy 'minecraft:chest' has a dynamic size resolved from the packet's
+      // slotCount (container slots only); the modern equivalent is fixed
+      const chestData = pWindows.windows['minecraft:generic_9x3'] ?? { type: 'minecraft:chest', slots: 63 }
+      const merchantData = pWindows.windows['minecraft:merchant'] ?? pWindows.windows['minecraft:villager']
+      const emptyItems = (n) => Array.from({ length: n }, () => Item.toNotch(null))
+      const openWindowPacket = (windowId, winData) => ({
+        windowId,
+        inventoryType: winData.type,
+        windowTitle: chatText(''),
+        slotCount: winData.slots - 36,
+        entityId: 0
+      })
+      const windowItemsPacket = (windowId, items) => ({
+        windowId,
+        stateId: 1,
+        items,
+        carriedItem: Item.toNotch(null)
+      })
+
+      it('opens a window whose early window_items reuses the id of a closed window', (done) => {
+        const emeraldId = registry.itemsByName.emerald.id
+
+        server.on('playerJoin', (client) => {
+          client.write('login', bot.test.generateLoginPacket())
+
+          bot.once('windowOpen', () => {
+            bot.closeWindow(bot.currentWindow)
+          })
+          client.on('close_window', () => {
+            bot.once('windowOpen', (window) => {
+              assert.strictEqual(window.type, merchantData.key)
+              assert.strictEqual(window.slots[0]?.type, emeraldId)
+              done()
+            })
+            // a villager window sends its contents before open_window, and
+            // reuses the chest's id when a respawn reset the server's window
+            // id counter in between
+            const items = emptyItems(merchantData.slots)
+            items[0] = Item.toNotch(new Item(emeraldId, 3))
+            client.write('window_items', windowItemsPacket(1, items))
+            client.write('open_window', openWindowPacket(1, merchantData))
+          })
+
+          client.write('open_window', openWindowPacket(1, chestData))
+          client.write('window_items', windowItemsPacket(1, emptyItems(chestData.slots)))
+        })
+      })
+
+      it('applies the player-inventory region of a trailing sync for a closed window', (done) => {
+        const stoneId = registry.itemsByName.stone.id
+        // chest slot 30 is in the window's player-inventory region and maps
+        // back to inventory slot 12
+        const chestSlot = 30
+        const invSlot = 12
+
+        server.on('playerJoin', (client) => {
+          client.write('login', bot.test.generateLoginPacket())
+
+          bot.once('windowOpen', () => {
+            bot.closeWindow(bot.currentWindow)
+          })
+          client.on('close_window', () => {
+            bot.inventory.once(`updateSlot:${invSlot}`, (oldItem, newItem) => {
+              assert.strictEqual(newItem?.type, stoneId)
+              done()
+            })
+            const items = emptyItems(chestData.slots)
+            items[chestSlot] = Item.toNotch(new Item(stoneId, 5))
+            client.write('window_items', windowItemsPacket(1, items))
+          })
+
+          client.write('open_window', openWindowPacket(1, chestData))
+          client.write('window_items', windowItemsPacket(1, emptyItems(chestData.slots)))
+        })
+      })
+    })
+
+    describe('scoreboard', () => {
+      it('enumerates only the display slots that hold an objective', async () => {
+        server.on('playerJoin', (client) => client.write('login', bot.test.generateLoginPacket()))
+        await once(bot, 'login')
+        bot._client.emit('scoreboard_objective', { name: 'test1', action: 0, displayText: JSON.stringify({ text: 'Test 1' }) })
+        bot._client.emit('scoreboard_display_objective', { name: 'test1', position: 1 })
+        assert.strictEqual(bot.scoreboard.sidebar, bot.scoreboards.test1)
+        assert.strictEqual(bot.scoreboard.list, undefined)
+        assert.deepStrictEqual(Object.keys(bot.scoreboard), ['1'])
+        assert.ok(Object.values(bot.scoreboard).every(sb => sb !== undefined))
+        assert.doesNotThrow(() => { for (const sb of Object.values(bot.scoreboard)) assert.strictEqual(sb.title, 'Test 1') })
+        bot._client.emit('scoreboard_objective', { name: 'test1', action: 1 })
+        assert.deepStrictEqual(Object.keys(bot.scoreboard), [])
+        assert.strictEqual(bot.scoreboard.sidebar, undefined)
+      })
+    })
     describe('tablist', () => {
       it('handles newlines in header and footer', (done) => {
         const HEADER = 'asd\ndsa'
@@ -1265,6 +1831,114 @@ for (const supportedVersion of mineflayer.testedVersions) {
       })
     })
 
+    describe('scoreboard reset on login', () => {
+      function teamAddPacket (teamName, players) {
+        const text = registry.supportFeature('teamUsesChatComponents') ? chatText : (s) => s
+        const mappedMode = registry.version['>=']('1.21.6')
+        const enumRules = registry.version['>=']('1.21.5') && registry.version['<']('1.21.6')
+        return {
+          team: teamName,
+          mode: mappedMode ? 'add' : 0,
+          name: text(teamName),
+          displayName: text(teamName),
+          prefix: text(''),
+          suffix: text(''),
+          friendlyFire: 1,
+          flags: { friendly_fire: true, see_friendly_invisible: false },
+          nameTagVisibility: enumRules ? 0 : 'always',
+          collisionRule: enumRules ? 0 : 'always',
+          color: 0,
+          formatting: 0,
+          players
+        }
+      }
+
+      function objectiveAddPacket (name) {
+        const typeField = registry.protocol.play.toClient.types.packet_scoreboard_objective[1].find(f => f.name === 'type')
+        return {
+          name,
+          action: 0,
+          displayText: chatText(name),
+          type: typeField.type[1].fields[0] === 'string' ? 'integer' : 0
+        }
+      }
+
+      function respawnPacket (loginPacket) {
+        if (!bot.supportFeature('usesLoginPacket')) {
+          return { dimension: 0, hashedSeed: [0, 0], gamemode: 0, levelType: 'default' }
+        }
+        // The respawn packet names the world the login packet declared.
+        loginPacket.worldName = 'minecraft:overworld'
+        loginPacket.hashedSeed = [0, 0]
+        loginPacket.entityId = 0
+        const packet = {
+          dimension: bot.supportFeature('dimensionDataInCodec') ? 'minecraft:overworld' : loginPacket.dimension,
+          worldName: loginPacket.worldName,
+          hashedSeed: loginPacket.hashedSeed,
+          gamemode: 0,
+          previousGamemode: 255,
+          isDebug: false,
+          isFlat: false,
+          copyMetadata: true,
+          death: { dimensionName: '', location: { x: 0, y: 0, z: 0 } }
+        }
+        if (!bot.supportFeature('spawnRespawnWorldDataField')) return packet
+        packet.name = loginPacket.worldName
+        packet.dimension = loginPacket.dimension
+        return { worldState: packet }
+      }
+
+      it('clears teams and objectives on login but not on respawn', async () => {
+        const teamPacketName = bot.supportFeature('teamUsesScoreboard') ? 'scoreboard_team' : 'teams'
+        const [client] = await once(server, 'playerJoin')
+        const loginPacket = bot.test.generateLoginPacket()
+        const teams = bot.teams
+        const teamMap = bot.teamMap
+        const scoreboards = bot.scoreboards
+        const positions = bot.scoreboard
+
+        await client.write('login', loginPacket)
+        client.write(teamPacketName, teamAddPacket('red', ['alice']))
+        await once(bot, 'teamCreated')
+        client.write('scoreboard_objective', objectiveAddPacket('kills'))
+        client.write('scoreboard_display_objective', { position: 1, name: 'kills' })
+        await once(bot, 'scoreboardPosition')
+        assert.deepStrictEqual(bot.teams.red.members, ['alice'])
+        assert.strictEqual(bot.teamMap.alice, bot.teams.red)
+        assert.strictEqual(bot.scoreboards.kills.name, 'kills')
+        assert.strictEqual(bot.scoreboard.sidebar, bot.scoreboards.kills)
+        assert.strictEqual(bot.scoreboard[1], bot.scoreboards.kills)
+
+        let removedEvents = 0
+        bot.on('teamRemoved', () => removedEvents++)
+        bot.on('scoreboardDeleted', () => removedEvents++)
+        client.write('login', loginPacket)
+        await once(bot, 'login')
+        assert.strictEqual(bot.teams, teams)
+        assert.strictEqual(bot.teamMap, teamMap)
+        assert.strictEqual(bot.scoreboards, scoreboards)
+        assert.strictEqual(bot.scoreboard, positions)
+        assert.deepStrictEqual(Object.keys(bot.teams), [])
+        assert.deepStrictEqual(Object.keys(bot.teamMap), [])
+        assert.deepStrictEqual(Object.keys(bot.scoreboards), [])
+        assert.strictEqual(bot.scoreboard[1], undefined)
+        assert.strictEqual(bot.scoreboard.sidebar, undefined)
+        assert.strictEqual(bot.scoreboard.list, undefined)
+        assert.strictEqual(bot.scoreboard.belowName, undefined)
+        assert.strictEqual(removedEvents, 0)
+
+        client.write(teamPacketName, teamAddPacket('red', ['bob']))
+        await once(bot, 'teamCreated')
+        assert.deepStrictEqual(bot.teams.red.members, ['bob'])
+        assert.strictEqual(bot.teamMap.alice, undefined)
+
+        client.write('respawn', respawnPacket(loginPacket))
+        await once(bot, 'respawn')
+        assert.deepStrictEqual(bot.teams.red.members, ['bob'])
+        assert.strictEqual(bot.teamMap.bob, bot.teams.red)
+      })
+    })
+
     describe('activateItem rotation', () => {
       it('should send the bot rotation in the use_item packet', function (done) {
         // The rotation field in use_item was added in 1.21.1
@@ -1278,6 +1952,7 @@ for (const supportedVersion of mineflayer.testedVersions) {
         const testYaw = 1.5
         const testPitch = -0.3
         server.on('playerJoin', async (client) => {
+          await bot.test.pluginsLoaded
           await client.write('login', bot.test.generateLoginPacket())
           await client.write('position', {
             x: 0,
@@ -1310,6 +1985,32 @@ for (const supportedVersion of mineflayer.testedVersions) {
           bot.entity.pitch = testPitch
           bot.activateItem()
         })
+      })
+    })
+
+    describe('onceWithCleanup', () => {
+      it('rejects instead of throwing out of emit when checkCondition throws', async () => {
+        // A condition that throws used to unwind whatever was emitting. For a
+        // client event that is the socket read path, which then stops delivering
+        // packets entirely and the bot dies on the next keepalive.
+        const emitter = new EventEmitter()
+        const boom = new Error('condition blew up')
+        const promise = onceWithCleanup(emitter, 'thing', {
+          checkCondition: () => { throw boom }
+        })
+        assert.doesNotThrow(() => emitter.emit('thing'))
+        await assert.rejects(promise, err => err === boom)
+        assert.strictEqual(emitter.listenerCount('thing'), 0)
+      })
+
+      it('rejects and removes the listener when the signal is aborted', async () => {
+        const emitter = new EventEmitter()
+        const abort = new AbortController()
+        const reason = new Error('no longer interested')
+        const promise = onceWithCleanup(emitter, 'thing', { signal: abort.signal })
+        abort.abort(reason)
+        await assert.rejects(promise, err => err === reason)
+        assert.strictEqual(emitter.listenerCount('thing'), 0)
       })
     })
   })

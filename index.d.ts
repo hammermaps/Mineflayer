@@ -24,6 +24,7 @@ export interface BotOptions extends ClientOptions {
   colorsEnabled?: boolean
   viewDistance?: ViewDistance
   mainHand?: MainHands
+  particleStatus?: 'all' | 'decreased' | 'minimal'
   difficulty?: number
   chatLengthLimit?: number
   physicsEnabled?: boolean
@@ -115,6 +116,8 @@ export interface BotEvents {
   playerLeft: (entity: Player) => Promise<void> | void
   blockUpdate: (oldBlock: Block | null, newBlock: Block) => Promise<void> | void
   'blockUpdate:(x, y, z)': (oldBlock: Block | null, newBlock: Block | null) => Promise<void> | void
+  blockEntityData: (block: Block | null) => Promise<void> | void
+  signOpen: (block: Block | null) => Promise<void> | void
   chunkColumnLoad: (entity: Vec3) => Promise<void> | void
   chunkColumnUnload: (entity: Vec3) => Promise<void> | void
   soundEffectHeard: (
@@ -187,6 +190,7 @@ export interface Bot extends TypedEmitter<BotEvents> {
   player: Player
   players: { [username: string]: Player }
   isRaining: boolean
+  rainState: number
   thunderState: number
   chatPatterns: ChatPattern[]
   settings: GameSettings
@@ -408,7 +412,7 @@ export interface Bot extends TypedEmitter<BotEvents> {
 
   putAway: (slot: number) => Promise<void>
 
-  closeWindow: (window: Window) => void
+  closeWindow: (window: Window) => Promise<void>
 
   transfer: (options: TransferOptions) => Promise<void>
 
@@ -501,6 +505,7 @@ export interface Player {
 export interface SkinData {
   url: string
   model: string | null
+  capeUrl?: string
 }
 
 export interface ChatPattern {
@@ -520,6 +525,7 @@ export interface SkinParts {
 }
 
 export interface GameSettings {
+  particleStatus: 'all' | 'decreased' | 'minimal'
   chat: ChatLevel
   colorsEnabled: boolean
   viewDistance: ViewDistance
@@ -560,6 +566,8 @@ export interface PhysicsOptions {
 }
 
 export interface Time {
+  /** World clocks keyed by their qualified registry names (26.1+). */
+  clocks: Record<string, WorldClock>
   doDaylightCycle: boolean
   bigTime: BigInt
   time: number
@@ -569,6 +577,12 @@ export interface Time {
   moonPhase: number
   bigAge: BigInt
   age: number
+}
+
+export interface WorldClock {
+  totalTicks: bigint
+  partialTick: number
+  rate: number
 }
 
 export interface ControlStateStatus {
@@ -676,7 +690,7 @@ interface ConditionalStorageEvents extends StorageEvents {
 export class Chest extends Window<StorageEvents> {
   constructor ();
 
-  close (): void;
+  close (): Promise<void>;
 
   deposit (
     itemType: number,
@@ -697,7 +711,7 @@ export class Furnace extends Window<FurnaceEvents> {
 
   constructor ();
 
-  close (): void;
+  close (): Promise<void>;
 
   takeInput (): Promise<Item>;
 
@@ -727,7 +741,7 @@ export class Furnace extends Window<FurnaceEvents> {
 export class Dispenser extends Window<StorageEvents> {
   constructor ();
 
-  close (): void;
+  close (): Promise<void>;
 
   deposit (
     itemType: number,
@@ -747,7 +761,7 @@ export class EnchantmentTable extends Window<ConditionalStorageEvents> {
 
   constructor ();
 
-  close (): void;
+  close (): Promise<void>;
 
   targetItem (): Item;
 
@@ -777,7 +791,7 @@ export class Villager extends Window<ConditionalStorageEvents> {
 
   constructor ();
 
-  close (): void;
+  close (): Promise<void>;
 }
 
 export interface VillagerTrade {

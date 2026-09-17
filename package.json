@@ -1,11 +1,11 @@
 {
   "name": "mineflayer",
-  "version": "4.37.1",
+  "version": "4.39.0",
   "description": "create minecraft bots with a stable, high level API",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "mocha_test": "mocha --reporter spec --exit",
+    "mocha_test": "mocha --require ./tools/native-test-server.js --reporter ./test/common/durationsReporter.js --exit",
     "test": "npm run mocha_test",
     "pretest": "npm run lint",
     "lint": "standard && standard-markdown",
