@@ -59,7 +59,7 @@ function createCommandHandler (worker) {
       if (playerName?.toLowerCase() === 'stop' && args.length === 1) return reply(worker.stopRole('follow') ? 'Folgen angehalten.' : 'Es ist kein Folgen aktiv.')
       if (args.length > 1) throw new Error('Verwendung: /worker follow [spieler]|stop')
       const target = playerName || message.playerName
-      worker.startFollow(target); return reply(`Folgt ${target} mit 3 Blöcken Abstand.`)
+      worker.startFollow(target, playerUuid, message.playerName); return reply(`Folgt ${target} mit 3 Blöcken Abstand und maximal 32 Blöcken Entfernung.`)
     }
     if (command === 'deposit') {
       const [kind, chestName] = args

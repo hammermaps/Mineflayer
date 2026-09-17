@@ -3,6 +3,7 @@
 const { Vec3 } = require('vec3')
 
 const woodNames = new Set(['oak_log', 'birch_log', 'spruce_log', 'jungle_log', 'acacia_log', 'dark_oak_log', 'mangrove_log', 'cherry_log', 'crimson_stem', 'warped_stem'])
+const followRadius = 32
 
 function asVec3 (position) { return new Vec3(position.x, position.y, position.z) }
 function isWood (item) { return woodNames.has(item.name) }
@@ -15,7 +16,14 @@ function findBlock (bot, resource, radius) {
 
 async function goNear (bot, position, range = 2) {
   if (!bot.pathfinder) throw new Error('mineflayer-pathfinder ist nicht geladen.')
-  const { goals } = require('mineflayer-pathfinder')
+  const { goals, Movements } = require('mineflayer-pathfinder')
+  const targetBlock = bot.blockAt(asVec3(position))
+  if (bot.entity.isInWater || targetBlock?.name === 'water') {
+    const WaterMovements = require('./water_movements')
+    bot.pathfinder.setMovements(new WaterMovements(bot))
+  } else {
+    bot.pathfinder.setMovements(new Movements(bot))
+  }
   await bot.pathfinder.goto(new goals.GoalNear(position.x, position.y, position.z, range))
 }
 
@@ -58,4 +66,14 @@ function shouldUseCreativeFlight (bot, target, flightActive) {
   return (verticalDistance > 2 && !target.onGround) || (flightActive && (!target.onGround || verticalDistance > 1))
 }
 
-module.exports = { woodNames, isWood, findBlock, goNear, depositWood, patrolPoints, insideArea, shouldUseCreativeFlight }
+function isWithinFollowRadius (bot, target) {
+  return bot.entity.position.distanceTo(target.position) <= followRadius
+}
+
+function pickVariant (variants, previous) {
+  const choices = variants.filter(variant => variant !== previous)
+  const pool = choices.length ? choices : variants
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+module.exports = { woodNames, followRadius, isWood, findBlock, goNear, depositWood, patrolPoints, insideArea, shouldUseCreativeFlight, isWithinFollowRadius, pickVariant }

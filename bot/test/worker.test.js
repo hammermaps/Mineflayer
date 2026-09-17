@@ -6,7 +6,9 @@ const { parseGatewayMessage } = require('../src/schema')
 const { TaskQueue } = require('../src/queue')
 const { bestEquipment } = require('../src/equipment')
 const { validateArea } = require('../src/commands')
-const { isWood, shouldUseCreativeFlight } = require('../src/services')
+const { isWood, shouldUseCreativeFlight, isWithinFollowRadius, pickVariant } = require('../src/services')
+const { loadMessages, formatMessage } = require('../src/messages')
+const WaterMovements = require('../src/water_movements')
 
 describe('WorkerBot foundation', () => {
   const message = { requestId: 'id', playerUuid: 'uuid', playerName: 'Op', world: 'minecraft:overworld', position: { x: 1, y: 64, z: 1 }, command: 'status', args: [] }
@@ -32,5 +34,21 @@ describe('WorkerBot foundation', () => {
     assert.equal(shouldUseCreativeFlight(bot, { position: { y: 67 }, onGround: false }, false), true)
     assert.equal(shouldUseCreativeFlight(bot, { position: { y: 65 }, onGround: true }, false), false)
     assert.equal(shouldUseCreativeFlight({ ...bot, abilities: { mayFly: false } }, { position: { y: 67 }, onGround: false }, false), false)
+  })
+  it('pauses follow targets beyond the configured radius', () => {
+    const bot = { entity: { position: { distanceTo: target => target.x } } }
+    assert.equal(isWithinFollowRadius(bot, { position: { x: 32 } }), true)
+    assert.equal(isWithinFollowRadius(bot, { position: { x: 33 } }), false)
+  })
+  it('chooses a different message variant when possible', () => {
+    const variants = ['eins', 'zwei', 'drei']
+    assert.notEqual(pickVariant(variants, 'eins'), 'eins')
+  })
+  it('loads and formats translatable follow messages', () => {
+    assert.equal(formatMessage(loadMessages('de').follow.resumed[0], { name: 'Alex' }), 'Ah, da bist du ja, Alex. Ich komme!')
+  })
+  it('provides a dedicated water movement type for diving routes', () => {
+    assert.equal(typeof WaterMovements.prototype.getMoveDown, 'function')
+    assert.equal(typeof WaterMovements.prototype.getMoveUp, 'function')
   })
 })

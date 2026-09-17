@@ -39,9 +39,11 @@ Die Rollen `guard`, `farm` und `forest` sind für einen Bereich zulässig. Das g
 /worker follow stop
 ```
 
-Ohne Spielernamen folgt WorkerBot dem OP, der den Befehl ausgeführt hat. Der Zielspieler muss sichtbar und in derselben Welt sein. WorkerBot hält ungefähr drei Blöcke Abstand, passt den Pfad bei Bewegung dynamisch an und wartet, wenn der Spieler die Welt wechselt oder außer Sicht ist.
+Ohne Spielernamen folgt WorkerBot dem OP, der den Befehl ausgeführt hat. Der Zielspieler muss sichtbar und in derselben Welt sein. WorkerBot hält ungefähr drei Blöcke Abstand und folgt nur innerhalb von 32 Blöcken. Bei größerer Entfernung hält er an und flüstert dem auslösenden OP eine persönliche, wechselnde Nachricht zu, etwa: `Magicstyle, du bist zu weit weg. Komm bitte näher, damit ich dir folgen kann.` Beim Annähern wird das Folgen automatisch fortgesetzt und ebenfalls per Flüstern mit einer persönlichen Variante bestätigt, zum Beispiel: `Ah, da bist du ja, Magicstyle. Ich komme!` Die Textvarianten liegen übersetzbar in `locales/de.json`.
 
 Hat WorkerBot Creative-Flugberechtigung und das Ziel fliegt deutlich über ihm, aktiviert er den Flug und folgt dreidimensional. Sobald das Ziel wieder am Boden ist, verwendet der Bot wieder den normalen Boden-Pathfinder.
+
+Folgt der Spieler unter Wasser oder liegt ein Ziel unter Wasser, wechselt WorkerBot automatisch auf Wasserwegfindung. Dabei kann er in Wasserhöhlen und vertikalen Wassersäulen auf- und abtauchen.
 
 ## Lager und Ressourcen
 

@@ -1,0 +1,14 @@
+{
+  "follow": {
+    "tooFar": [
+      "{name}, du bist zu weit weg. Komm bitte näher, damit ich dir folgen kann.",
+      "{name}, ich habe dich aus den Augen verloren. Komm bitte wieder näher.",
+      "{name}, du bist außerhalb meines Follow-Radius. Komm bitte näher."
+    ],
+    "resumed": [
+      "Ah, da bist du ja, {name}. Ich komme!",
+      "{name}, ich kann dich wieder sehen. Ich folge dir weiter.",
+      "Alles klar, {name}, ich bin wieder bei dir."
+    ]
+  }
+}

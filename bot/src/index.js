@@ -5,7 +5,8 @@ const mineflayer = require('../..')
 const { loadConfig } = require('./config')
 const { parseGatewayMessage } = require('./schema')
 const { TaskQueue } = require('./queue')
-const { patrolPoints, goNear, insideArea, shouldUseCreativeFlight } = require('./services')
+const { patrolPoints, goNear, insideArea, shouldUseCreativeFlight, isWithinFollowRadius, pickVariant } = require('./services')
+const { loadMessages, formatMessage } = require('./messages')
 const { createCommandHandler } = require('./commands')
 
 const configPath = path.resolve(process.env.WORKER_CONFIG || path.join(__dirname, '..', 'config.json'))
@@ -23,12 +24,18 @@ class Worker {
     this.queue = new TaskQueue(); this.positions = {}; this.role = null; this.patrolIndex = 0
     this.patrolRunId = 0; this.patrolTimer = null; this.patrolBusy = false; this.followTimer = null
     this.followFlightActive = false; this.followFlightTask = null
+    this.usesWaterMovements = false
+    this.messages = loadMessages()
     this.handle = createCommandHandler(this)
   }
 
   reply (playerUuid, text) {
     const payload = Buffer.from(JSON.stringify({ playerUuid, text }), 'utf8')
     try { this.bot._client.write('custom_payload', { channel: 'worker:reply', data: payload }) } catch (error) { console.warn(`Antwort an Gateway fehlgeschlagen: ${error.message}`) }
+  }
+
+  whisper (playerName, text) {
+    try { this.bot.chat(`/msg ${playerName} ${text}`) } catch (error) { console.warn(`Flüstern an ${playerName} fehlgeschlagen: ${error.message}`) }
   }
 
   status () {
@@ -68,12 +75,12 @@ class Worker {
     return Object.values(this.bot.players).find(player => player.username?.toLowerCase() === wanted)?.entity
   }
 
-  startFollow (playerName) {
+  startFollow (playerName, notifyUuid, notifyName) {
     if (!this.bot.pathfinder) throw new Error('Pathfinder ist nicht geladen.')
     if (playerName.toLowerCase() === this.bot.username.toLowerCase()) throw new Error('WorkerBot kann sich nicht selbst folgen.')
     if (!this.findPlayer(playerName)) throw new Error(`Spieler ${playerName} ist nicht sichtbar oder nicht in derselben Welt.`)
     this.stop()
-    this.role = { type: 'follow', playerName }; this.queue.start({ name: 'follow', priority: 30 })
+    this.role = { type: 'follow', playerName, notifyUuid, notifyName, waitingForPlayer: false }; this.queue.start({ name: 'follow', priority: 30 })
     this.refreshFollow()
     this.followTimer = setInterval(() => this.refreshFollow(), 1000)
   }
@@ -82,6 +89,25 @@ class Worker {
     if (this.role?.type !== 'follow') return
     const target = this.findPlayer(this.role.playerName)
     if (!target) { this.bot.pathfinder.setGoal(null); return }
+    this.configureWaterNavigation(target)
+    if (!isWithinFollowRadius(this.bot, target)) {
+      this.stopFollowFlight()
+      this.bot.pathfinder.setGoal(null)
+      if (!this.role.waitingForPlayer) {
+        this.role.waitingForPlayer = true
+        const variants = this.messages.follow.tooFar.map(template => formatMessage(template, { name: this.role.notifyName }))
+        this.role.lastDistanceMessage = pickVariant(variants, this.role.lastDistanceMessage)
+        this.whisper(this.role.notifyName, this.role.lastDistanceMessage)
+      }
+      return
+    }
+    if (this.role.waitingForPlayer) {
+      this.role.waitingForPlayer = false
+      const variants = this.messages.follow.resumed.map(template => formatMessage(template, { name: this.role.notifyName }))
+      this.role.lastResumeMessage = pickVariant(variants, this.role.lastResumeMessage)
+      this.whisper(this.role.notifyName, this.role.lastResumeMessage)
+    }
+    this.bot.lookAt(target.position.offset(0, (target.height ?? 1.8) * 0.85, 0), true).catch(error => console.warn(`Folgen: Blickrichtung konnte nicht gesetzt werden (${error.message})`))
     if (this.shouldFlyToFollow(target)) {
       this.followByFlight(target)
       return
@@ -89,6 +115,15 @@ class Worker {
     this.stopFollowFlight()
     const { goals } = require('mineflayer-pathfinder')
     this.bot.pathfinder.setGoal(new goals.GoalFollow(target, 3), true)
+  }
+
+  configureWaterNavigation (target) {
+    const shouldDive = this.bot.entity.isInWater || target.isInWater || this.bot.blockAt(target.position)?.name === 'water'
+    if (shouldDive === this.usesWaterMovements) return
+    const { Movements } = require('mineflayer-pathfinder')
+    const MovementType = shouldDive ? require('./water_movements') : Movements
+    this.bot.pathfinder.setMovements(new MovementType(this.bot))
+    this.usesWaterMovements = shouldDive
   }
 
   shouldFlyToFollow (target) {

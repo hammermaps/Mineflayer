@@ -13,6 +13,8 @@ Der WorkerBot ist eine eigenständige Anwendung. Er verändert die Mineflayer-AP
 
 Die erste Änderung über `/worker area ...` oder `/worker chest ...` legt die lokale, absichtlich ignorierte `bot/config.json` an. Die versionierte `config.example.json` dokumentiert Rollen, Ressourcen und Standard-Gegner.
 
+Die übersetzbaren Bot-Texte liegen unter `bot/locales/`. Standard ist `de`; `WORKER_LOCALE` in `bot/.env` wählt eine vorhandene Locale-Datei. Fehlt die gewünschte Sprache, wird sicher auf Deutsch zurückgefallen.
+
 ## OP-Befehle
 
 Eine vollständige Referenz mit Beispielen steht in [BEFEHLE.md](BEFEHLE.md). Kurzform: `/worker status`, `stop`, `equip`, `pos1`, `pos2`, `area save <guard|farm|forest> <name>`, `chest set <name>`, `patrol start <area>`, `patrol stop`, `guard start <area>`, `guard stop`, `follow [spieler]`, `follow stop`, `deposit wood <chest>` und `find <resource> [radius]`.
